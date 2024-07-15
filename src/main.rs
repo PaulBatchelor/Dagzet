@@ -8,13 +8,15 @@ enum ReturnCode {
     Okay,
     Error,
     NameSpaceNotSet,
+    NodeAlreadyExists,
 }
 
 struct DagZet {
     /// The current namespace
     pub namespace: Option<String>,
     pub graph_remarks: HashMap<String, Vec<String>>,
-    pub curnode: Option<String>,
+    pub curnode: Option<u32>,
+    pub nodes: HashMap<String, u32>,
 }
 
 impl DagZet {
@@ -23,6 +25,7 @@ impl DagZet {
             namespace: None,
             graph_remarks: HashMap::new(),
             curnode: None,
+            nodes: HashMap::new(),
         }
     }
     pub fn parse_line(&mut self, line: &str) {
@@ -65,10 +68,21 @@ impl DagZet {
                 // TODO: append to set/hashmap, make sure it doesn't already exist
 
                 // TODO: make this a path with the namespace, create node ID
-                let nodename = args.to_string();
+                //let nodename = ns.copy() + "/".to_string() + args.to_string();
+                let mut nodename = String::from(ns);
+                nodename.push_str("/");
+                nodename.push_str(args);
+                let mut nodes = &mut self.nodes;
 
-                // TODO: maybe use node ID instead of string?
-                self.curnode = Some(nodename);
+                if nodes.contains_key(&nodename) {
+                    return Err(ReturnCode::NodeAlreadyExists);
+                }
+
+                let node_id = nodes.len() as u32 + 1;
+
+                nodes.insert(nodename, node_id);
+
+                self.curnode = Some(node_id);
             }
             "ln" => {}
             "co" => {}
@@ -87,7 +101,7 @@ fn main() {
     }
 
     let filename: &str = &env::args().last().unwrap();
-    let f = File::open(&filename).unwrap();
+    let f = File::open(filename).unwrap();
     let reader = BufReader::new(f);
     let mut dz = DagZet::new();
 
@@ -148,6 +162,18 @@ mod tests {
         };
         assert!(caught_no_namespace);
 
-        // TODO: finish checks here
+        // catch multiple node declared error
+        let mut dz = DagZet::new();
+
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let caught_duplicate_node = match dz.parse_line_with_result(&"nn bbb") {
+            Ok(_) => false,
+            Err(rc) => match rc {
+                ReturnCode::NodeAlreadyExists => true,
+                _ => false,
+            },
+        };
+        assert!(caught_duplicate_node);
     }
 }
