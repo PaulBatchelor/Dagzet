@@ -9,6 +9,7 @@ enum ReturnCode {
     Error,
     NameSpaceNotSet,
     NodeAlreadyExists,
+    NodeNotSelected,
 }
 
 struct DagZet {
@@ -72,7 +73,7 @@ impl DagZet {
                 let mut nodename = String::from(ns);
                 nodename.push_str("/");
                 nodename.push_str(args);
-                let mut nodes = &mut self.nodes;
+                let nodes = &mut self.nodes;
 
                 if nodes.contains_key(&nodename) {
                     return Err(ReturnCode::NodeAlreadyExists);
@@ -84,7 +85,12 @@ impl DagZet {
 
                 self.curnode = Some(node_id);
             }
-            "ln" => {}
+            "ln" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+            }
             "co" => {}
             "cr" => {}
 
@@ -175,5 +181,24 @@ mod tests {
             },
         };
         assert!(caught_duplicate_node);
+    }
+
+    #[test]
+    fn test_lines() {
+        let mut dz = DagZet::new();
+        // attempt to parse lines without select a node
+        dz.parse_line("ns aaa");
+
+        let caught_missing_node = match dz.parse_line_with_result(&"ln hello line") {
+            Ok(_) => false,
+            Err(rc) => match rc {
+                ReturnCode::NodeNotSelected => true,
+                _ => false,
+            },
+        };
+
+        assert!(caught_missing_node);
+
+        // Make sure the lines are behaving as expected.
     }
 }
