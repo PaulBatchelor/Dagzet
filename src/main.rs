@@ -4,52 +4,79 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+enum ReturnCode {
+    Okay,
+    Error,
+    NameSpaceNotSet,
+}
+
 struct DagZet {
     /// The current namespace
-    pub namespace: String,
+    pub namespace: Option<String>,
     pub graph_remarks: HashMap<String, Vec<String>>,
+    pub curnode: Option<String>,
 }
 
 impl DagZet {
     pub fn new() -> Self {
         DagZet {
-            namespace: "".to_string(),
+            namespace: None,
             graph_remarks: HashMap::new(),
+            curnode: None,
         }
     }
-
     pub fn parse_line(&mut self, line: &str) {
+        let _ = self.parse_line_with_result(line);
+    }
+
+    pub fn parse_line_with_result(&mut self, line: &str) -> Result<ReturnCode, ReturnCode> {
         if line.len() < 3 {
-            return;
+            return Err(ReturnCode::Error);
         }
+
         let cmd = &line[0..2];
         let args = &line[3..];
-        dbg!(cmd, args);
 
         match cmd {
             "ns" => {
-                self.namespace = args.to_string();
+                self.namespace = Some(args.to_string());
             }
             "gr" => {
                 let gr = &mut self.graph_remarks;
 
-                match gr.get_mut(&self.namespace) {
+                let ns = match &self.namespace {
+                    Some(n) => n,
+                    None => return Err(ReturnCode::NameSpaceNotSet),
+                };
+
+                match gr.get_mut(ns) {
                     Some(remarks) => remarks.push(args.to_string()),
                     None => {
-                        gr.insert(self.namespace.clone(), vec![args.to_string()]);
+                        gr.insert(ns.clone(), vec![args.to_string()]);
                     }
                 }
+            }
+            "nn" => {
+                let ns = match &self.namespace {
+                    Some(n) => n,
+                    None => return Err(ReturnCode::NameSpaceNotSet),
+                };
+
+                // TODO: append to set/hashmap, make sure it doesn't already exist
+
+                // TODO: make this a path with the namespace, create node ID
+                let nodename = args.to_string();
+
+                // TODO: maybe use node ID instead of string?
+                self.curnode = Some(nodename);
             }
             "ln" => {}
             "co" => {}
             "cr" => {}
-            "nn" => {}
 
-            c => {
-                // TODO: (better) error handling
-                panic!("could not find: {c}");
-            }
+            _ => return Err(ReturnCode::Error),
         }
+        Ok(ReturnCode::Okay)
     }
 }
 
@@ -68,6 +95,7 @@ fn main() {
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
     for str in lines_iter {
+        // TODO: handle error
         dz.parse_line(&str);
     }
 }
@@ -82,7 +110,7 @@ mod tests {
 
         dz.parse_line(&"ns hello");
 
-        assert_eq!(dz.namespace, "hello".to_string());
+        assert_eq!(dz.namespace, Some("hello".to_string()));
     }
 
     #[test]
@@ -107,5 +135,19 @@ mod tests {
                 // Shouldn't happen, since there was a check before this
             }
         };
+    }
+    #[test]
+    fn test_new_node() {
+        let mut dz = DagZet::new();
+        let caught_no_namespace = match dz.parse_line_with_result(&"nn hello") {
+            Ok(_) => false,
+            Err(rc) => match rc {
+                ReturnCode::NameSpaceNotSet => true,
+                _ => false,
+            },
+        };
+        assert!(caught_no_namespace);
+
+        // TODO: finish checks here
     }
 }
