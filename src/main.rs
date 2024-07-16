@@ -71,7 +71,7 @@ impl DagZet {
                 // TODO: make this a path with the namespace, create node ID
                 //let nodename = ns.copy() + "/".to_string() + args.to_string();
                 let mut nodename = String::from(ns);
-                nodename.push_str("/");
+                nodename.push_str(r"\/");
                 nodename.push_str(args);
                 let nodes = &mut self.nodes;
 
@@ -86,7 +86,7 @@ impl DagZet {
                 self.curnode = Some(node_id);
             }
             "ln" => {
-                let curnode = match &self.curnode {
+                let _curnode = match &self.curnode {
                     Some(id) => *id,
                     _ => return Err(ReturnCode::NodeNotSelected),
                 };
@@ -128,7 +128,7 @@ mod tests {
     fn test_namespace() {
         let mut dz = DagZet::new();
 
-        dz.parse_line(&"ns hello");
+        dz.parse_line("ns hello");
 
         assert_eq!(dz.namespace, Some("hello".to_string()));
     }
@@ -136,9 +136,9 @@ mod tests {
     #[test]
     fn test_graph_remarks() {
         let mut dz = DagZet::new();
-        dz.parse_line(&"ns hello");
-        dz.parse_line(&"gr this is a graph remark");
-        dz.parse_line(&"gr for the node called hello");
+        dz.parse_line("ns hello");
+        dz.parse_line("gr this is a graph remark");
+        dz.parse_line("gr for the node called hello");
 
         assert_eq!(dz.graph_remarks.len(), 1);
         assert!(dz.graph_remarks.contains_key("hello"));
@@ -159,12 +159,9 @@ mod tests {
     #[test]
     fn test_new_node() {
         let mut dz = DagZet::new();
-        let caught_no_namespace = match dz.parse_line_with_result(&"nn hello") {
+        let caught_no_namespace = match dz.parse_line_with_result("nn hello") {
             Ok(_) => false,
-            Err(rc) => match rc {
-                ReturnCode::NameSpaceNotSet => true,
-                _ => false,
-            },
+            Err(rc) => matches!(rc, ReturnCode::NameSpaceNotSet),
         };
         assert!(caught_no_namespace);
 
@@ -173,12 +170,9 @@ mod tests {
 
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
-        let caught_duplicate_node = match dz.parse_line_with_result(&"nn bbb") {
+        let caught_duplicate_node = match dz.parse_line_with_result("nn bbb") {
             Ok(_) => false,
-            Err(rc) => match rc {
-                ReturnCode::NodeAlreadyExists => true,
-                _ => false,
-            },
+            Err(rc) => matches!(rc, ReturnCode::NodeAlreadyExists),
         };
         assert!(caught_duplicate_node);
     }
@@ -189,12 +183,13 @@ mod tests {
         // attempt to parse lines without select a node
         dz.parse_line("ns aaa");
 
-        let caught_missing_node = match dz.parse_line_with_result(&"ln hello line") {
+        let caught_missing_node = match dz.parse_line_with_result("ln hello line") {
             Ok(_) => false,
-            Err(rc) => match rc {
-                ReturnCode::NodeNotSelected => true,
-                _ => false,
-            },
+            Err(rc) => matches!(rc, ReturnCode::NodeNotSelected),
+            // Err(rc) => match rc {
+            //     ReturnCode::NodeNotSelected => true,
+            //     _ => false,
+            // },
         };
 
         assert!(caught_missing_node);
