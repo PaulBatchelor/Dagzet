@@ -18,6 +18,7 @@ struct DagZet {
     pub graph_remarks: HashMap<String, Vec<String>>,
     pub curnode: Option<u32>,
     pub nodes: HashMap<String, u32>,
+    pub lines: HashMap<u32, Vec<String>>,
 }
 
 impl DagZet {
@@ -27,6 +28,7 @@ impl DagZet {
             graph_remarks: HashMap::new(),
             curnode: None,
             nodes: HashMap::new(),
+            lines: HashMap::new(),
         }
     }
     pub fn parse_line(&mut self, line: &str) {
@@ -71,8 +73,9 @@ impl DagZet {
                 // TODO: make this a path with the namespace, create node ID
                 //let nodename = ns.copy() + "/".to_string() + args.to_string();
                 let mut nodename = String::from(ns);
-                nodename.push_str(r"\/");
+                nodename.push('/');
                 nodename.push_str(args);
+                dbg!(nodename.to_string());
                 let nodes = &mut self.nodes;
 
                 if nodes.contains_key(&nodename) {
@@ -86,10 +89,18 @@ impl DagZet {
                 self.curnode = Some(node_id);
             }
             "ln" => {
-                let _curnode = match &self.curnode {
+                let curnode = match &self.curnode {
                     Some(id) => *id,
                     _ => return Err(ReturnCode::NodeNotSelected),
                 };
+                let lines = &mut self.lines;
+
+                match lines.get_mut(&curnode) {
+                    Some(ln) => ln.push(args.to_string()),
+                    None => {
+                        lines.insert(curnode, vec![args.to_string()]);
+                    }
+                }
             }
             "co" => {}
             "cr" => {}
@@ -175,6 +186,7 @@ mod tests {
             Err(rc) => matches!(rc, ReturnCode::NodeAlreadyExists),
         };
         assert!(caught_duplicate_node);
+        assert!(dz.nodes.contains_key("aaa/bbb"));
     }
 
     #[test]
@@ -186,14 +198,27 @@ mod tests {
         let caught_missing_node = match dz.parse_line_with_result("ln hello line") {
             Ok(_) => false,
             Err(rc) => matches!(rc, ReturnCode::NodeNotSelected),
-            // Err(rc) => match rc {
-            //     ReturnCode::NodeNotSelected => true,
-            //     _ => false,
-            // },
         };
 
         assert!(caught_missing_node);
 
+        let mut dz = DagZet::new();
+        // attempt to parse lines without select a node
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("ln ccc");
+        dz.parse_line("ln another line");
+
         // Make sure the lines are behaving as expected.
+        assert_eq!(dz.lines.len(), 1);
+        assert!(dz.nodes.contains_key("aaa/bbb"));
+
+        let node_id = dz.nodes.get("aaa/bbb").unwrap();
+
+        if let Some(ln) = dz.lines.get(node_id) {
+            assert_eq!(ln.len(), 2);
+            assert_eq!(ln[0], "ccc");
+            assert_eq!(ln[1], "another line");
+        }
     }
 }
