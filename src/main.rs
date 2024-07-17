@@ -10,6 +10,8 @@ enum ReturnCode {
     NameSpaceNotSet,
     NodeAlreadyExists,
     NodeNotSelected,
+    NotEnoughArgs,
+    AlreadyConnected,
 }
 
 struct DagZet {
@@ -19,6 +21,7 @@ struct DagZet {
     pub curnode: Option<u32>,
     pub nodes: HashMap<String, u32>,
     pub lines: HashMap<u32, Vec<String>>,
+    pub connections: Vec<[String; 2]>,
 }
 
 impl DagZet {
@@ -29,6 +32,7 @@ impl DagZet {
             curnode: None,
             nodes: HashMap::new(),
             lines: HashMap::new(),
+            connections: vec![],
         }
     }
     pub fn parse_line(&mut self, line: &str) {
@@ -68,10 +72,6 @@ impl DagZet {
                     None => return Err(ReturnCode::NameSpaceNotSet),
                 };
 
-                // TODO: append to set/hashmap, make sure it doesn't already exist
-
-                // TODO: make this a path with the namespace, create node ID
-                //let nodename = ns.copy() + "/".to_string() + args.to_string();
                 let mut nodename = String::from(ns);
                 nodename.push('/');
                 nodename.push_str(args);
@@ -102,12 +102,52 @@ impl DagZet {
                     }
                 }
             }
-            "co" => {}
+            "co" => {
+                let ns = match &self.namespace {
+                    Some(n) => n,
+                    None => return Err(ReturnCode::NameSpaceNotSet),
+                };
+
+                let connect_args: Vec<_> = args.split_whitespace().collect();
+
+                if connect_args.len() < 2 {
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+
+                let mut left = ns.to_string();
+                left.push('/');
+                left.push_str(connect_args[0]);
+
+                let mut right = ns.to_string();
+                right.push('/');
+                right.push_str(connect_args[1]);
+
+                if self.already_connected(&left, &right) {
+                    return Err(ReturnCode::AlreadyConnected);
+                }
+
+                self.connections.push([left, right]);
+            }
             "cr" => {}
 
             _ => return Err(ReturnCode::Error),
         }
         Ok(ReturnCode::Okay)
+    }
+
+    fn already_connected(&self, left: &str, right: &str) -> bool {
+        for con in &self.connections {
+            let lmatch = left == con[0];
+
+            if lmatch {
+                let rmatch = right == con[1];
+
+                if lmatch && rmatch {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
@@ -220,5 +260,56 @@ mod tests {
             assert_eq!(ln[0], "ccc");
             assert_eq!(ln[1], "another line");
         }
+    }
+    #[test]
+    fn test_connect() {
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+
+        let result = match dz.parse_line_with_result("co bbb") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::NotEnoughArgs),
+        };
+
+        assert!(result, "Did not catch NotEnoughArgs error");
+
+        dz.parse_line("co bbb aaa");
+
+        assert_eq!(
+            dz.connections.len(),
+            1,
+            "expected a single connection to be made"
+        );
+
+        let c = &dz.connections[0];
+
+        let aaa = "top/aaa";
+        let bbb = "top/bbb";
+
+        assert_eq!(&c[0], bbb, "expected top/bbb node in left connection");
+        assert_eq!(&c[1], aaa, "expected top/aaa node in right connection");
+
+        // Make sure different namespaces work
+        dz.parse_line("ns pot");
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("co bbb aaa");
+
+        let c = &dz.connections[1];
+        let aaa = "pot/aaa";
+        let bbb = "pot/bbb";
+
+        assert_eq!(&c[0], bbb, "expected pot/bbb node in left connection");
+        assert_eq!(&c[1], aaa, "expected pot/aaa node in right connection");
+
+        // make sure repeated connections aren't attempted
+        let result = match dz.parse_line_with_result("co bbb aaa") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::AlreadyConnected),
+        };
+
+        assert!(result, "Did not catch AlreadyConnected error");
     }
 }
