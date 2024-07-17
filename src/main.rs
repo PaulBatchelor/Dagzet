@@ -114,6 +114,8 @@ impl DagZet {
                     return Err(ReturnCode::NotEnoughArgs);
                 }
 
+                // TODO: add '$' shortcut
+
                 let mut left = ns.to_string();
                 left.push('/');
                 left.push_str(connect_args[0]);
@@ -311,5 +313,7 @@ mod tests {
         };
 
         assert!(result, "Did not catch AlreadyConnected error");
+
+        // TODO: make test for shortcuts
     }
 }
