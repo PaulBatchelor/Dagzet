@@ -138,7 +138,7 @@ impl DagZet {
                 let use_left_shorthand = connect_args[0] == "$";
                 let use_right_shorthand = connect_args[1] == "$";
 
-                let _curnode = if use_left_shorthand || use_right_shorthand {
+                let curnode = if use_left_shorthand || use_right_shorthand {
                     match self.curnode {
                         Some(x) => Some(&self.nodelist[x as usize - 1]),
                         None => return Err(ReturnCode::NodeNotSelected),
@@ -147,14 +147,32 @@ impl DagZet {
                     None
                 };
 
-                let mut left = ns.to_string();
-                let mut right = ns.to_string();
+                let process_arg = |arg: &str, use_shorthand: bool| -> String {
+                    if use_shorthand {
+                        curnode.unwrap().to_string()
+                    } else {
+                        let mut outstr = ns.to_string();
+                        outstr.push('/');
+                        outstr.push_str(arg);
+                        outstr
+                    }
+                };
 
-                left.push('/');
-                left.push_str(connect_args[0]);
+                // let left = if use_left_shorthand {
+                //     curnode.unwrap().to_string()
+                // } else {
+                //     let mut left = ns.to_string();
+                //     left.push('/');
+                //     left.push_str(connect_args[0]);
+                //     left
+                // };
 
-                right.push('/');
-                right.push_str(connect_args[1]);
+                let left = process_arg(&connect_args[0], use_left_shorthand);
+                let right = process_arg(&connect_args[1], use_right_shorthand);
+                // let mut right = ns.to_string();
+
+                // right.push('/');
+                // right.push_str(connect_args[1]);
 
                 if self.already_connected(&left, &right) {
                     return Err(ReturnCode::AlreadyConnected);
@@ -390,5 +408,16 @@ mod tests {
         dz.parse_line("co $ aaa");
 
         assert_eq!(dz.connections.len(), 1, "no connections found");
+
+        let co = &dz.connections[0];
+        // Test lefthand shorthand
+        assert_eq!(co[0], "top/bbb", "left shorthand does not work");
+
+        // Test righthand shorthand for bbb -> ccc
+        dz.parse_line("nn ccc");
+        dz.parse_line("co bbb $");
+
+        let co = &dz.connections[1];
+        assert_eq!(co[1], "top/ccc", "right shorthand does not work");
     }
 }
