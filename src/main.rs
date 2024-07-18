@@ -140,9 +140,11 @@ impl DagZet {
 
                 let _curnode = if use_left_shorthand || use_right_shorthand {
                     match self.curnode {
-                        Some(x) => todo!("shorthands don't work yet"),
+                        Some(x) => Some(&self.nodelist[x as usize - 1]),
                         None => return Err(ReturnCode::NodeNotSelected),
                     }
+                } else {
+                    None
                 };
 
                 let mut left = ns.to_string();
