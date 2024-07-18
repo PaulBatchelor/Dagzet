@@ -17,10 +17,27 @@ enum ReturnCode {
 struct DagZet {
     /// The current namespace
     pub namespace: Option<String>,
+    /// For each graph namespace, have some remarks represented as lines
     pub graph_remarks: HashMap<String, Vec<String>>,
+
+    /// The local ID value of the currently selected node
     pub curnode: Option<u32>,
+
+    /// Nodes stored in a hashmap, used to prevent duplicates
     pub nodes: HashMap<String, u32>,
+
+    /// An inverse lookup table for the nodes. This
+    /// assumes it will be updated consistently with
+    /// the node hashmap
+    pub nodelist: Vec<String>,
+
+    /// Each line can ave text content called "lines" (ln)
     pub lines: HashMap<u32, Vec<String>>,
+
+    /// Edges of the knowledge graph. These are represented
+    /// as strings instead of IDs so they can be resolved
+    /// later. This allows connections to be made before
+    /// nodes are made, which is more flexible.
     pub connections: Vec<[String; 2]>,
 }
 
@@ -31,6 +48,7 @@ impl DagZet {
             graph_remarks: HashMap::new(),
             curnode: None,
             nodes: HashMap::new(),
+            nodelist: vec![],
             lines: HashMap::new(),
             connections: vec![],
         }
@@ -84,6 +102,7 @@ impl DagZet {
 
                 let node_id = nodes.len() as u32 + 1;
 
+                self.nodelist.push(nodename.clone());
                 nodes.insert(nodename, node_id);
 
                 self.curnode = Some(node_id);
@@ -116,11 +135,22 @@ impl DagZet {
 
                 // TODO: add '$' shortcut
 
+                let use_left_shorthand = connect_args[0] == "$";
+                let use_right_shorthand = connect_args[1] == "$";
+
+                let _curnode = if use_left_shorthand || use_right_shorthand {
+                    match self.curnode {
+                        Some(x) => todo!("shorthands don't work yet"),
+                        None => return Err(ReturnCode::NodeNotSelected),
+                    }
+                };
+
                 let mut left = ns.to_string();
+                let mut right = ns.to_string();
+
                 left.push('/');
                 left.push_str(connect_args[0]);
 
-                let mut right = ns.to_string();
                 right.push('/');
                 right.push_str(connect_args[1]);
 
@@ -223,12 +253,30 @@ mod tests {
 
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
+
+        assert_eq!(dz.nodes.len(), 1, "Expected nodes.");
+        assert_eq!(
+            dz.nodelist.len(),
+            dz.nodes.len(),
+            "nodelist inconsistency: wrong size."
+        );
+
         let caught_duplicate_node = match dz.parse_line_with_result("nn bbb") {
             Ok(_) => false,
             Err(rc) => matches!(rc, ReturnCode::NodeAlreadyExists),
         };
         assert!(caught_duplicate_node);
         assert!(dz.nodes.contains_key("aaa/bbb"));
+
+        let node_id = dz.nodes.get("aaa/bbb").unwrap();
+        let node_id = *node_id as usize - 1;
+
+        let maps_to_nodelist = dz.nodelist[node_id] == "aaa/bbb";
+
+        assert!(
+            maps_to_nodelist,
+            "nodelist inconsistency: ID mapping broken"
+        );
     }
 
     #[test]
@@ -315,5 +363,30 @@ mod tests {
         assert!(result, "Did not catch AlreadyConnected error");
 
         // TODO: make test for shortcuts
+    }
+
+    #[test]
+    fn test_connect_shorthands() {
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+
+        // Make sure shorthand returns an error if a node
+        // isn't selected.
+        // Note that it doesn't matter if 'bbb' exist or not
+        // those checks don't happen until after all the nodes
+        // are created.
+        let result = match dz.parse_line_with_result("co $ bbb") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::NodeNotSelected),
+        };
+        assert!(result, "Did not catch NodeNotSelected error");
+
+        // Make nodes aaa and bbb, then use shorthand to connect
+        // bbb -> aaa
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("co $ aaa");
+
+        assert_eq!(dz.connections.len(), 1, "no connections found");
     }
 }
