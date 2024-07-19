@@ -232,18 +232,18 @@ impl DagZet {
     fn check_unknown_nodes(&self) -> HashSet<String> {
         let mut unknown_nodes = HashSet::new();
 
-        // for co in &self.connections {
-        //     let left = &co[0];
-        //     let right = &co[1];
+        for co in &self.connections {
+            let left = &co[0];
+            let right = &co[1];
 
-        //     if !self.nodes.contains_key(left) {
-        //         unknown_nodes.insert(left.to_string());
-        //     }
+            if !self.nodes.contains_key(left) {
+                unknown_nodes.insert(left.to_string());
+            }
 
-        //     if !self.nodes.contains_key(right) {
-        //         unknown_nodes.insert(right.to_string());
-        //     }
-        // }
+            if !self.nodes.contains_key(right) {
+                unknown_nodes.insert(right.to_string());
+            }
+        }
         unknown_nodes
     }
 }
@@ -529,7 +529,7 @@ mod tests {
 
         assert_eq!(unknown.len(), 2, "Wrong number of expected nodes");
 
-        assert!(unknown.contains("ccc"));
-        assert!(unknown.contains("ddd"));
+        assert!(unknown.contains("top/ccc"));
+        assert!(unknown.contains("top/ddd"));
     }
 }
