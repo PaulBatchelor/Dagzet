@@ -7,11 +7,13 @@ use std::io::BufReader;
 enum ReturnCode {
     Okay,
     Error,
+    InvalidCommand,
     NameSpaceNotSet,
     NodeAlreadyExists,
     NodeNotSelected,
     NotEnoughArgs,
     AlreadyConnected,
+    NoConnections,
 }
 
 struct DagZet {
@@ -186,7 +188,7 @@ impl DagZet {
             }
             "cr" => {}
 
-            _ => return Err(ReturnCode::Error),
+            _ => return Err(ReturnCode::InvalidCommand),
         }
         Ok(ReturnCode::Okay)
     }
@@ -428,6 +430,13 @@ mod tests {
     #[test]
     fn test_connection_remarks() {
         let mut dz = DagZet::new();
+
+        let result = match dz.parse_line_with_result("cr no connections have been made") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::NoConnections),
+        };
+        assert!(result, "Did not catch NoConnections error");
+
         dz.parse_line("co aaa bbb");
         dz.parse_line("cr this is a remark");
 
@@ -450,5 +459,16 @@ mod tests {
 
         assert_eq!(co[0], "this is a remark");
         assert_eq!(co[1], "this is a remark on another line");
+    }
+
+    #[test]
+    fn test_invalid_command() {
+        let mut dz = DagZet::new();
+
+        let result = match dz.parse_line_with_result("xx this isn't a real command") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::InvalidCommand),
+        };
+        assert!(result, "Did not catch InvalidCommand error");
     }
 }
