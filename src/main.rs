@@ -1,5 +1,6 @@
 use std::collections::hash_map;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -226,6 +227,24 @@ impl DagZet {
             }
         }
         false
+    }
+
+    fn check_unknown_nodes(&self) -> HashSet<String> {
+        let mut unknown_nodes = HashSet::new();
+
+        // for co in &self.connections {
+        //     let left = &co[0];
+        //     let right = &co[1];
+
+        //     if !self.nodes.contains_key(left) {
+        //         unknown_nodes.insert(left.to_string());
+        //     }
+
+        //     if !self.nodes.contains_key(right) {
+        //         unknown_nodes.insert(right.to_string());
+        //     }
+        // }
+        unknown_nodes
     }
 }
 
@@ -491,5 +510,26 @@ mod tests {
             Err(rc) => matches!(rc, ReturnCode::InvalidCommand),
         };
         assert!(result, "Did not catch InvalidCommand error");
+    }
+
+    #[test]
+
+    fn test_unknown_nodes() {
+        let mut dz = DagZet::new();
+
+        dz.parse_line("ns top");
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+
+        dz.parse_line("co aaa bbb");
+        dz.parse_line("co aaa ccc");
+        dz.parse_line("co ccc ddd");
+
+        let unknown = dz.check_unknown_nodes();
+
+        assert_eq!(unknown.len(), 2, "Wrong number of expected nodes");
+
+        assert!(unknown.contains("ccc"));
+        assert!(unknown.contains("ddd"));
     }
 }
