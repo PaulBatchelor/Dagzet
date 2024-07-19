@@ -1,3 +1,4 @@
+use std::collections::hash_map;
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
@@ -43,7 +44,7 @@ struct DagZet {
     pub connections: Vec<[String; 2]>,
 
     /// Remarks can be made about last connection made
-    pub connection_remarks: HashMap<u32, Vec<String>>,
+    pub connection_remarks: HashMap<usize, Vec<String>>,
 }
 
 impl DagZet {
@@ -186,7 +187,26 @@ impl DagZet {
 
                 self.connections.push([left, right]);
             }
-            "cr" => {}
+            "cr" => {
+                if self.connections.is_empty() {
+                    return Err(ReturnCode::NoConnections);
+                }
+
+                let cid = self.connections.len() - 1;
+
+                // if self.connection_remarks.contains_key(&cid) {
+                //     let rm = &mut self.connection_remarks.get_mut(&cid).unwrap();
+                //     rm.push(args.to_string());
+                // } else {
+                //     self.connection_remarks.insert(cid, vec![args.to_string()]);
+                // }
+                if let hash_map::Entry::Vacant(e) = self.connection_remarks.entry(cid) {
+                    e.insert(vec![args.to_string()]);
+                } else {
+                    let rm = &mut self.connection_remarks.get_mut(&cid).unwrap();
+                    rm.push(args.to_string());
+                }
+            }
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -431,12 +451,13 @@ mod tests {
     fn test_connection_remarks() {
         let mut dz = DagZet::new();
 
-        let result = match dz.parse_line_with_result("cr no connections have been made") {
+        let result = match dz.parse_line_with_result("cr no connections have been made yet") {
             Ok(_) => false,
             Err(rc) => matches!(rc, ReturnCode::NoConnections),
         };
         assert!(result, "Did not catch NoConnections error");
 
+        dz.parse_line("ns top");
         dz.parse_line("co aaa bbb");
         dz.parse_line("cr this is a remark");
 
