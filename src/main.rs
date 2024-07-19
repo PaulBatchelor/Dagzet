@@ -31,7 +31,7 @@ struct DagZet {
     /// the node hashmap
     pub nodelist: Vec<String>,
 
-    /// Each line can ave text content called "lines" (ln)
+    /// Each line can have text content called "lines" (ln)
     pub lines: HashMap<u32, Vec<String>>,
 
     /// Edges of the knowledge graph. These are represented
@@ -39,6 +39,9 @@ struct DagZet {
     /// later. This allows connections to be made before
     /// nodes are made, which is more flexible.
     pub connections: Vec<[String; 2]>,
+
+    /// Remarks can be made about last connection made
+    pub connection_remarks: HashMap<u32, Vec<String>>,
 }
 
 impl DagZet {
@@ -51,6 +54,7 @@ impl DagZet {
             nodelist: vec![],
             lines: HashMap::new(),
             connections: vec![],
+            connection_remarks: HashMap::new(),
         }
     }
     pub fn parse_line(&mut self, line: &str) {
@@ -419,5 +423,32 @@ mod tests {
 
         let co = &dz.connections[1];
         assert_eq!(co[1], "top/ccc", "right shorthand does not work");
+    }
+
+    #[test]
+    fn test_connection_remarks() {
+        let mut dz = DagZet::new();
+        dz.parse_line("co aaa bbb");
+        dz.parse_line("cr this is a remark");
+
+        // make sure connection remark is made
+        assert_eq!(
+            dz.connection_remarks.len(),
+            1,
+            "Expected a connection remark to appear."
+        );
+
+        // Make sure appending works
+
+        dz.parse_line("cr this is a remark on another line");
+
+        // grab the connection remark, make sure appending works
+
+        let co = dz.connection_remarks.get(&0).unwrap();
+
+        assert_eq!(co.len(), 2, "Expected 2 lines in this remark");
+
+        assert_eq!(co[0], "this is a remark");
+        assert_eq!(co[1], "this is a remark on another line");
     }
 }
