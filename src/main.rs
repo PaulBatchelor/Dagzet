@@ -246,6 +246,14 @@ impl DagZet {
         }
         unknown_nodes
     }
+
+    fn generate_edges(&self) -> Vec<[u32; 2]> {
+        vec![]
+    }
+
+    pub fn check_for_loops(&mut self, edges: &Vec<[u32; 2]>) -> Result<ReturnCode, HashSet<u32>> {
+        Ok(ReturnCode::Okay)
+    }
 }
 
 fn main() {
@@ -513,7 +521,6 @@ mod tests {
     }
 
     #[test]
-
     fn test_unknown_nodes() {
         let mut dz = DagZet::new();
 
@@ -531,5 +538,21 @@ mod tests {
 
         assert!(unknown.contains("top/ccc"));
         assert!(unknown.contains("top/ddd"));
+    }
+
+    #[test]
+    fn test_check_for_loops() {
+        let mut dz = DagZet::new();
+
+        dz.parse_line("ns top");
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+
+        dz.parse_line("co aaa bbb");
+        dz.parse_line("co bbb aaa");
+
+        let edges = dz.generate_edges();
+
+        assert!(dz.check_for_loops(&edges).is_err(), "Did not catch cycles");
     }
 }
