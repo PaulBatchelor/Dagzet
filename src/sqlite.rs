@@ -11,6 +11,10 @@ pub trait SQLize {
     fn sqlize(&self) -> String;
 }
 
+pub trait Row<T> {
+    fn sqlize_values(&self) {}
+}
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Param {
@@ -77,10 +81,16 @@ impl Table {
     pub fn add_column(&mut self, param: &Param) {
         self.columns.push(param.clone());
     }
+
+    // pub fn sqlize_insert(&mut self, row: &impl Row) -> String {
+    //     "".to_string();
+    // }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::marker::PhantomData;
+
     use super::*;
 
     #[test]
@@ -98,13 +108,19 @@ mod tests {
         assert_eq!(p.sqlize(), "name TEXT UNIQUE", "unexpected SQLite code");
     }
 
-    #[test]
-    fn sqlize_table() {
+    fn generate_test_table() -> Table {
         let mut tab = Table::new("dz_nodes");
 
         tab.add_column(&Param::new("name", ParamType::TextUnique));
         tab.add_column(&Param::new("id", ParamType::IntegerPrimaryKey));
         tab.add_column(&Param::new("position", ParamType::Integer));
+
+        tab
+    }
+
+    #[test]
+    fn sqlize_table() {
+        let tab = generate_test_table();
 
         let expected = concat!(
             "CREATE TABLE IF NOT EXISTS dz_nodes(\n",
@@ -115,5 +131,33 @@ mod tests {
         );
 
         assert_eq!(tab.sqlize(), expected);
+    }
+
+    #[allow(dead_code)]
+    struct TestRow {
+        name: String,
+        id: u32,
+        position: u32,
+    }
+
+    impl<TestTable> Row<TestTable> for TestRow {}
+
+    #[test]
+    #[allow(unused)]
+    fn sqlize_insert() {
+        let tab = generate_test_table();
+
+        let row = TestRow {
+            name: "test".to_string(),
+            id: 0,
+            position: 0,
+        };
+
+        let expected = concat!(
+            "INSERT INTO dz_nodes(name, id, position)\n",
+            "VALUES('test', 0, 0);"
+        );
+
+        //assert_eq!(tab.sqlize_insert(&row), expected);
     }
 }
