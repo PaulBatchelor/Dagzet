@@ -248,21 +248,8 @@ impl DagZet {
                     }
                 };
 
-                // let left = if use_left_shorthand {
-                //     curnode.unwrap().to_string()
-                // } else {
-                //     let mut left = ns.to_string();
-                //     left.push('/');
-                //     left.push_str(connect_args[0]);
-                //     left
-                // };
-
                 let left = process_arg(&connect_args[0], use_left_shorthand);
                 let right = process_arg(&connect_args[1], use_right_shorthand);
-                // let mut right = ns.to_string();
-
-                // right.push('/');
-                // right.push_str(connect_args[1]);
 
                 if self.already_connected(&left, &right) {
                     return Err(ReturnCode::AlreadyConnected);
@@ -277,12 +264,6 @@ impl DagZet {
 
                 let cid = self.connections.len() - 1;
 
-                // if self.connection_remarks.contains_key(&cid) {
-                //     let rm = &mut self.connection_remarks.get_mut(&cid).unwrap();
-                //     rm.push(args.to_string());
-                // } else {
-                //     self.connection_remarks.insert(cid, vec![args.to_string()]);
-                // }
                 if let hash_map::Entry::Vacant(e) = self.connection_remarks.entry(cid) {
                     e.insert(vec![args.to_string()]);
                 } else {
@@ -410,7 +391,6 @@ fn main() {
     let reader = BufReader::new(f);
     let mut dz = DagZet::new();
 
-    //let _ = reader.read_line(&mut line)?;
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
     for str in lines_iter {
@@ -448,7 +428,6 @@ fn main() {
 
     // TODO: auto-generate ID value use sql code
     for (name, id) in dz.nodes.iter() {
-        //println!("{}, {}", name, id);
         let row = NodesRow {
             name: name.to_string(),
             id: *id,
