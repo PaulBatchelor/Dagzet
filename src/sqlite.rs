@@ -14,7 +14,7 @@ pub trait SQLize {
 }
 
 pub trait Row<T> {
-    fn sqlize_values(&self) {}
+    fn sqlize_values(&self) -> String;
 }
 
 #[allow(dead_code)]
@@ -86,8 +86,22 @@ impl<T> Table<T> {
         self.columns.push(param.clone());
     }
 
-    pub fn sqlize_insert(&self, _row: &impl Row<T>) -> String {
-        "".to_string()
+    pub fn sqlize_insert(&self, row: &impl Row<T>) -> String {
+        let mut sql = "".to_string();
+
+        sql.push_str(&format!("INSERT INTO {}(", self.name));
+
+        let mut params: Vec<String> = vec![];
+
+        for col in &self.columns {
+            params.push(col.name.to_string());
+        }
+
+        sql.push_str(&params.join(", "));
+        sql.push_str(")\nVALUES(");
+        sql.push_str(&row.sqlize_values());
+        sql.push_str(");");
+        sql
     }
 }
 
@@ -104,7 +118,11 @@ mod tests {
         position: u32,
     }
 
-    impl<TestTable> Row<TestTable> for TestRow {}
+    impl<TestTable> Row<TestTable> for TestRow {
+        fn sqlize_values(&self) -> String {
+            format!("'{}', {}, {}", self.name, self.id, self.position)
+        }
+    }
 
     #[test]
     fn sqlize_param_type() {
@@ -154,12 +172,12 @@ mod tests {
         let row = TestRow {
             name: "test".to_string(),
             id: 0,
-            position: 0,
+            position: 1,
         };
 
         let expected = concat!(
             "INSERT INTO dz_nodes(name, id, position)\n",
-            "VALUES('test', 0, 0);"
+            "VALUES('test', 0, 1);"
         );
 
         assert_eq!(
