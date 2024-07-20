@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub enum ParamType {
@@ -23,9 +25,10 @@ pub struct Param {
 }
 
 #[allow(dead_code)]
-pub struct Table {
+pub struct Table<T> {
     name: String,
     columns: Vec<Param>,
+    phantom: PhantomData<T>,
 }
 
 #[allow(dead_code)]
@@ -46,7 +49,7 @@ impl SQLize for Param {
     }
 }
 
-impl SQLize for Table {
+impl<T> SQLize for Table<T> {
     fn sqlize(&self) -> String {
         let mut sql = format!("CREATE TABLE IF NOT EXISTS {}(\n", self.name);
         let mut params: Vec<String> = vec![];
@@ -70,11 +73,12 @@ impl Param {
     }
 }
 
-impl Table {
+impl<T> Table<T> {
     pub fn new(name: &str) -> Self {
-        Table {
+        Table::<T> {
             name: name.to_string(),
             columns: vec![],
+            phantom: PhantomData,
         }
     }
 
@@ -82,16 +86,25 @@ impl Table {
         self.columns.push(param.clone());
     }
 
-    // pub fn sqlize_insert(&mut self, row: &impl Row) -> String {
-    //     "".to_string();
-    // }
+    pub fn sqlize_insert(&self, _row: &impl Row<T>) -> String {
+        "".to_string()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
-
     use super::*;
+
+    struct TestTable;
+
+    #[allow(dead_code)]
+    struct TestRow {
+        name: String,
+        id: u32,
+        position: u32,
+    }
+
+    impl<TestTable> Row<TestTable> for TestRow {}
 
     #[test]
     fn sqlize_param_type() {
@@ -108,7 +121,7 @@ mod tests {
         assert_eq!(p.sqlize(), "name TEXT UNIQUE", "unexpected SQLite code");
     }
 
-    fn generate_test_table() -> Table {
+    fn generate_test_table() -> Table<TestTable> {
         let mut tab = Table::new("dz_nodes");
 
         tab.add_column(&Param::new("name", ParamType::TextUnique));
@@ -133,15 +146,6 @@ mod tests {
         assert_eq!(tab.sqlize(), expected);
     }
 
-    #[allow(dead_code)]
-    struct TestRow {
-        name: String,
-        id: u32,
-        position: u32,
-    }
-
-    impl<TestTable> Row<TestTable> for TestRow {}
-
     #[test]
     #[allow(unused)]
     fn sqlize_insert() {
@@ -158,6 +162,10 @@ mod tests {
             "VALUES('test', 0, 0);"
         );
 
-        //assert_eq!(tab.sqlize_insert(&row), expected);
+        assert_eq!(
+            tab.sqlize_insert(&row),
+            expected,
+            "Did not generate expected INSERT statement"
+        );
     }
 }
