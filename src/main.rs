@@ -48,6 +48,49 @@ struct DagZet {
     pub connection_remarks: HashMap<usize, Vec<String>>,
 }
 
+fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
+    for edge in edges {
+        if edge[0] == b && edge[1] == a {
+            return true;
+        }
+    }
+    false
+}
+
+fn remove_edge(edges: &mut Vec<[u32; 2]>, a: u32, b: u32) {
+    let mut edges_to_remove = vec![];
+    for (idx, edge) in edges.iter_mut().enumerate() {
+        if edge[0] == a && edge[1] == b {
+            edges_to_remove.push(idx);
+        }
+    }
+
+    for idx in edges_to_remove {
+        edges.remove(idx);
+    }
+}
+
+fn no_incoming_nodes(node: u32, edges: &Vec<[u32; 2]>) -> bool {
+    for edge in edges {
+        if edge[1] == node {
+            return false;
+        }
+    }
+    true
+}
+
+fn nodes_connected_to(node: u32, edges: &Vec<[u32; 2]>) -> HashSet<u32> {
+    let mut connected: HashSet<u32> = HashSet::new();
+
+    for edge in edges {
+        if edge[0] == node {
+            connected.insert(edge[1]);
+        }
+    }
+
+    connected
+}
+
 impl DagZet {
     pub fn new() -> Self {
         DagZet {
@@ -101,7 +144,6 @@ impl DagZet {
                 let mut nodename = String::from(ns);
                 nodename.push('/');
                 nodename.push_str(args);
-                dbg!(nodename.to_string());
                 let nodes = &mut self.nodes;
 
                 if nodes.contains_key(&nodename) {
@@ -248,10 +290,70 @@ impl DagZet {
     }
 
     fn generate_edges(&self) -> Vec<[u32; 2]> {
-        vec![]
+        let mut edges = vec![];
+
+        for co in &self.connections {
+            let left_id = self.nodes.get(&co[0]).unwrap();
+            let right_id = self.nodes.get(&co[1]).unwrap();
+            edges.push([*left_id, *right_id]);
+        }
+
+        edges
     }
 
-    pub fn check_for_loops(&mut self, edges: &Vec<[u32; 2]>) -> Result<ReturnCode, HashSet<u32>> {
+    pub fn check_for_loops(&mut self, edges: &Vec<[u32; 2]>) -> Result<ReturnCode, Vec<[u32; 2]>> {
+        // Generate set of nodes
+        let mut nodelist: HashSet<u32> = HashSet::new();
+
+        for (_, id) in &self.nodes {
+            nodelist.insert(*id);
+        }
+
+        // deep copy edge
+        let mut edges = edges.clone();
+
+        // Determine initial set of nodes with no incoming nodes
+        let mut no_incoming: HashSet<u32> = HashSet::new();
+
+        for node in &nodelist {
+            if no_incoming_nodes(*node, &edges) {
+                no_incoming.insert(*node);
+            }
+        }
+
+        // Main Loop
+
+        while !no_incoming.is_empty() {
+            let new_no_incoming = HashSet::new();
+            for n in &no_incoming {
+                let nodesfrom = nodes_connected_to(*n, &edges);
+
+                for m in &nodesfrom {
+                    remove_edge(&mut edges, *n, *m);
+                }
+            }
+            no_incoming = new_no_incoming;
+        }
+        // Look for any remaining edges
+        if !edges.is_empty() {
+            // Check remaining edges for loops
+            let mut found_loops: Vec<[u32; 2]> = vec![];
+            for edge in &edges {
+                if does_loop_exist(&edges, edge[0], edge[1]) {
+                    found_loops.push(edge.clone());
+                }
+            }
+
+            // Keep track of loops found and return.
+            if !found_loops.is_empty() {
+                return Err(found_loops);
+            } else {
+                // If there are remaining edges but no loops,
+                // panic. That's weird and probably shouldn't happen?
+                panic!("Not sure why there are remaining edges.");
+            }
+        }
+
         Ok(ReturnCode::Okay)
     }
 }
@@ -551,6 +653,7 @@ mod tests {
         dz.parse_line("co aaa bbb");
         dz.parse_line("co bbb aaa");
 
+        assert_eq!(dz.check_unknown_nodes().len(), 0, "Found unknown nodes");
         let edges = dz.generate_edges();
 
         assert!(dz.check_for_loops(&edges).is_err(), "Did not catch cycles");
