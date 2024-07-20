@@ -271,6 +271,7 @@ impl DagZet {
         false
     }
 
+    #[allow(dead_code)]
     fn check_unknown_nodes(&self) -> HashSet<String> {
         let mut unknown_nodes = HashSet::new();
 
@@ -289,6 +290,7 @@ impl DagZet {
         unknown_nodes
     }
 
+    #[allow(dead_code)]
     fn generate_edges(&self) -> Vec<[u32; 2]> {
         let mut edges = vec![];
 
@@ -301,6 +303,7 @@ impl DagZet {
         edges
     }
 
+    #[allow(dead_code)]
     pub fn check_for_loops(&mut self, edges: &Vec<[u32; 2]>) -> Result<ReturnCode, Vec<[u32; 2]>> {
         // Generate set of nodes
         let mut nodelist: HashSet<u32> = HashSet::new();
