@@ -4,11 +4,15 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 
 mod sqlite;
 use sqlite::*;
+
+mod tables;
+use tables::*;
 
 enum ReturnCode {
     Okay,
@@ -20,20 +24,6 @@ enum ReturnCode {
     NotEnoughArgs,
     AlreadyConnected,
     NoConnections,
-}
-
-struct NodesTable;
-
-struct NodesRow {
-    name: String,
-    id: u32,
-    position: u32,
-}
-
-impl<NodesTable> Row<NodesTable> for NodesRow {
-    fn sqlize_values(&self) -> String {
-        format!("'{}', {}, {}", self.name, self.id, self.position)
-    }
 }
 
 impl fmt::Display for ReturnCode {
@@ -418,23 +408,13 @@ fn main() {
     }
 
     // Generate nodes table
+    let mut f = io::stdout();
 
-    let mut nodes: Table<NodesTable> = Table::new("dz_nodes");
-    nodes.add_column(&Param::new("name", ParamType::TextUnique));
-    nodes.add_column(&Param::new("id", ParamType::IntegerPrimaryKey));
-    nodes.add_column(&Param::new("position", ParamType::Integer));
+    println!("BEGIN;");
+    let nodes: Table<NodesTable> = Table::default();
+    nodes.generate(&dz, &mut f);
 
-    println!("{}", &nodes.sqlize());
-
-    // TODO: auto-generate ID value use sql code
-    for (name, id) in dz.nodes.iter() {
-        let row = NodesRow {
-            name: name.to_string(),
-            id: *id,
-            position: 0,
-        };
-        println!("{}", nodes.sqlize_insert(&row));
-    }
+    println!("COMMIT;");
 }
 
 #[cfg(test)]

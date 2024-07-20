@@ -88,7 +88,9 @@ impl<T> Table<T> {
         let mut params: Vec<String> = vec![];
 
         for col in &self.columns {
-            params.push(col.name.to_string());
+            if !matches!(col.ptype, ParamType::IntegerPrimaryKey) {
+                params.push(col.name.to_string());
+            }
         }
 
         sql.push_str(&params.join(", "));
@@ -113,7 +115,7 @@ mod tests {
 
     impl<TestTable> Row<TestTable> for TestRow {
         fn sqlize_values(&self) -> String {
-            format!("'{}', {}, {}", self.name, self.id, self.position)
+            format!("'{}', {}", self.name, self.position)
         }
     }
 
@@ -169,8 +171,8 @@ mod tests {
         };
 
         let expected = concat!(
-            "INSERT INTO dz_nodes(name, id, position)\n",
-            "VALUES('test', 0, 1);"
+            "INSERT INTO dz_nodes(name, position)\n",
+            "VALUES('test', 1);"
         );
 
         assert_eq!(
