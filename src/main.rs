@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -6,7 +7,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-pub mod sqlite;
+mod sqlite;
+use sqlite::*;
 
 enum ReturnCode {
     Okay,
@@ -18,6 +20,36 @@ enum ReturnCode {
     NotEnoughArgs,
     AlreadyConnected,
     NoConnections,
+}
+
+struct NodesTable;
+
+struct NodesRow {
+    name: String,
+    id: u32,
+    position: u32,
+}
+
+impl<NodesTable> Row<NodesTable> for NodesRow {
+    fn sqlize_values(&self) -> String {
+        format!("'{}', {}, {}", self.name, self.id, self.position)
+    }
+}
+
+impl fmt::Display for ReturnCode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ReturnCode::Okay => write!(f, "Everything is okay!"),
+            ReturnCode::Error => write!(f, "Something went wrong."),
+            ReturnCode::InvalidCommand => write!(f, "Invalid command"),
+            ReturnCode::NameSpaceNotSet => write!(f, "Namespace not set"),
+            ReturnCode::NodeAlreadyExists => write!(f, "Node Already Exists"),
+            ReturnCode::NodeNotSelected => write!(f, "Node Not Selected."),
+            ReturnCode::NotEnoughArgs => write!(f, "Not Enough arguments"),
+            ReturnCode::AlreadyConnected => write!(f, "Already connected"),
+            ReturnCode::NoConnections => write!(f, "No connections made"),
+        }
+    }
 }
 
 struct DagZet {
@@ -106,11 +138,17 @@ impl DagZet {
             connection_remarks: HashMap::new(),
         }
     }
+
+    #[allow(dead_code)]
     pub fn parse_line(&mut self, line: &str) {
         let _ = self.parse_line_with_result(line);
     }
 
     pub fn parse_line_with_result(&mut self, line: &str) -> Result<ReturnCode, ReturnCode> {
+        if line.is_empty() {
+            return Ok(ReturnCode::Okay);
+        }
+
         if line.len() < 3 {
             return Err(ReturnCode::Error);
         }
@@ -273,7 +311,6 @@ impl DagZet {
         false
     }
 
-    #[allow(dead_code)]
     fn check_unknown_nodes(&self) -> HashSet<String> {
         let mut unknown_nodes = HashSet::new();
 
@@ -292,7 +329,6 @@ impl DagZet {
         unknown_nodes
     }
 
-    #[allow(dead_code)]
     fn generate_edges(&self) -> Vec<[u32; 2]> {
         let mut edges = vec![];
 
@@ -379,7 +415,46 @@ fn main() {
 
     for str in lines_iter {
         // TODO: handle error
-        dz.parse_line(&str);
+        let result = dz.parse_line_with_result(&str);
+
+        match result {
+            Ok(_) => {}
+            Err(rc) => {
+                panic!("error: {}", rc)
+            }
+        };
+    }
+
+    let unknowns = dz.check_unknown_nodes();
+
+    if !unknowns.is_empty() {
+        panic!("There were some unknown nodes");
+    }
+
+    let result = dz.check_for_loops(&dz.generate_edges());
+
+    if result.is_err() {
+        panic!("Loops found")
+    }
+
+    // Generate nodes table
+
+    let mut nodes: Table<NodesTable> = Table::new("dz_nodes");
+    nodes.add_column(&Param::new("name", ParamType::TextUnique));
+    nodes.add_column(&Param::new("id", ParamType::IntegerPrimaryKey));
+    nodes.add_column(&Param::new("position", ParamType::Integer));
+
+    println!("{}", &nodes.sqlize());
+
+    // TODO: auto-generate ID value use sql code
+    for (name, id) in dz.nodes.iter() {
+        //println!("{}, {}", name, id);
+        let row = NodesRow {
+            name: name.to_string(),
+            id: *id,
+            position: 0,
+        };
+        println!("{}", nodes.sqlize_insert(&row));
     }
 }
 

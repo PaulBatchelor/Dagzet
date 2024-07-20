@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
 
-#[allow(dead_code)]
 #[derive(Clone)]
 pub enum ParamType {
-    None,
     TextUnique,
     IntegerPrimaryKey,
     Integer,
@@ -17,28 +15,24 @@ pub trait Row<T> {
     fn sqlize_values(&self) -> String;
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Param {
     name: String,
     ptype: ParamType,
 }
 
-#[allow(dead_code)]
 pub struct Table<T> {
     name: String,
     columns: Vec<Param>,
     phantom: PhantomData<T>,
 }
 
-#[allow(dead_code)]
 impl SQLize for ParamType {
     fn sqlize(&self) -> String {
         match self {
             ParamType::TextUnique => "TEXT UNIQUE".to_string(),
             ParamType::IntegerPrimaryKey => "INTEGER PRIMARY KEY".to_string(),
             ParamType::Integer => "INTEGER".to_string(),
-            _ => "".to_string(),
         }
     }
 }
@@ -59,7 +53,7 @@ impl<T> SQLize for Table<T> {
         }
 
         sql.push_str(&params.join(",\n"));
-        sql.push_str("\n)\n");
+        sql.push_str("\n);\n");
         sql
     }
 }
@@ -111,7 +105,6 @@ mod tests {
 
     struct TestTable;
 
-    #[allow(dead_code)]
     struct TestRow {
         name: String,
         id: u32,
@@ -158,7 +151,7 @@ mod tests {
             "    name TEXT UNIQUE,\n",
             "    id INTEGER PRIMARY KEY,\n",
             "    position INTEGER\n",
-            ")\n"
+            ");\n"
         );
 
         assert_eq!(tab.sqlize(), expected);
