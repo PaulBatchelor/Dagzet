@@ -17,3 +17,7 @@ co $ this_is_a_node
 cr I have made a connection, and am now remarking on it.
 cr Yes, there can be several lines
 cr in this connection remark
+
+nn remarkable_node
+rm this node has a remark!
+rm what a remarkable node

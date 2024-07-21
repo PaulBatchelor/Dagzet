@@ -71,5 +71,8 @@ fn main() {
     let connection_remarks: Table<ConnectionRemarksTable> = Table::default();
     connection_remarks.generate(&dz, &mut f);
 
+    let node_remarks: Table<NodeRemarksTable> = Table::default();
+    node_remarks.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

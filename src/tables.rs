@@ -233,3 +233,44 @@ impl Generate for Table<ConnectionRemarksTable> {
         }
     }
 }
+
+pub struct NodeRemarksTable;
+
+pub struct NodeRemarksRow<'a> {
+    node: &'a String,
+    remarks: &'a Vec<String>,
+}
+
+impl<NodeRemarksTable> Row<NodeRemarksTable> for NodeRemarksRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}'",
+            name_lookup(self.node),
+            lines_to_json(self.remarks)
+        )
+    }
+}
+
+impl Default for Table<NodeRemarksTable> {
+    fn default() -> Self {
+        let mut con: Table<NodeRemarksTable> = Table::new("dz_remarks");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("remarks", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<NodeRemarksTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.node_remarks {
+            let row = NodeRemarksRow {
+                node: &dz.nodelist[*key as usize - 1],
+                remarks: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
