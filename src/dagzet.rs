@@ -59,6 +59,9 @@ pub struct DagZet {
 
     /// Remarks can be made about last connection made
     pub connection_remarks: HashMap<usize, Vec<String>>,
+
+    /// Remarks can be made about last node selected
+    pub node_remarks: HashMap<u32, Vec<String>>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -115,6 +118,7 @@ impl DagZet {
             lines: HashMap::new(),
             connections: vec![],
             connection_remarks: HashMap::new(),
+            node_remarks: HashMap::new(),
         }
     }
 
@@ -249,6 +253,20 @@ impl DagZet {
                 }
             }
             "zz" => {}
+            "rm" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+                let remarks = &mut self.node_remarks;
+
+                match remarks.get_mut(&curnode) {
+                    Some(ln) => ln.push(args.to_string()),
+                    None => {
+                        remarks.insert(curnode, vec![args.to_string()]);
+                    }
+                }
+            }
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -643,5 +661,40 @@ mod tests {
 
         let result = dz.parse_line_with_result("zz this is a comment").is_ok();
         assert!(result, "Did not properly ignore comment");
+    }
+
+    #[test]
+    fn test_node_remarks() {
+        let mut dz = DagZet::new();
+        // attempt to parse lines without select a node
+        dz.parse_line("ns aaa");
+
+        let caught_missing_node = match dz.parse_line_with_result("rm hello remark") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::NodeNotSelected),
+        };
+
+        assert!(
+            caught_missing_node,
+            "tried to make a remark on unselected node"
+        );
+
+        let mut dz = DagZet::new();
+        // attempt to parse lines without select a node
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("rm ccc");
+        dz.parse_line("rm another line");
+
+        // Make sure the remarks are behaving as expected.
+        assert_eq!(dz.node_remarks.len(), 1, "couldn't find remarks");
+
+        let node_id = dz.nodes.get("aaa/bbb").unwrap();
+
+        if let Some(rm) = dz.lines.get(node_id) {
+            assert_eq!(rm.len(), 2);
+            assert_eq!(rm[0], "ccc");
+            assert_eq!(rm[1], "another line");
+        }
     }
 }
