@@ -44,7 +44,6 @@ impl Generate for Table<NodesTable> {
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
         }
-        let _ = f.write_all(b"\n");
     }
 }
 
@@ -63,7 +62,7 @@ impl<ConnectionsTable> Row<ConnectionsTable> for ConnectionsRow {
 
 impl Default for Table<ConnectionsTable> {
     fn default() -> Self {
-        let mut con: Table<ConnectionsTable> = Table::new("dz_nodes");
+        let mut con: Table<ConnectionsTable> = Table::new("dz_connections");
         con.add_column(&Param::new("left", ParamType::Integer));
         con.add_column(&Param::new("right", ParamType::Integer));
         con
@@ -85,7 +84,69 @@ impl Generate for Table<ConnectionsTable> {
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
         }
+    }
+}
 
-        let _ = f.write_all(b"\n");
+pub struct LinesTable;
+
+pub struct LinesRow<'a> {
+    node: String,
+    lines: &'a Vec<String>,
+}
+
+fn name_lookup(name: &String) -> String {
+    format!("(SELECT id from dz_nodes WHERE name IS '{name}' LIMIT 1)")
+}
+
+fn lines_to_json(lines: &[String]) -> String {
+    let mut jsonstr = "[".to_string();
+
+    let vals = lines
+        .iter()
+        .map(|x| {
+            let mut s = "\"".to_string();
+            s.push_str(x);
+            s.push('"');
+            s
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+    jsonstr.push_str(&vals);
+    jsonstr.push(']');
+
+    jsonstr
+}
+
+impl<LinesTable> Row<LinesTable> for LinesRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}'",
+            name_lookup(&self.node),
+            lines_to_json(self.lines)
+        )
+    }
+}
+
+impl Default for Table<LinesTable> {
+    fn default() -> Self {
+        let mut con: Table<LinesTable> = Table::new("dz_lines");
+        con.add_column(&Param::new("left", ParamType::Integer));
+        con.add_column(&Param::new("right", ParamType::Integer));
+        con
+    }
+}
+
+impl Generate for Table<LinesTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.lines {
+            let row = LinesRow {
+                node: dz.nodelist[*key as usize - 1].to_string(),
+                lines: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
     }
 }

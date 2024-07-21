@@ -96,7 +96,7 @@ impl<T> Table<T> {
         sql.push_str(&params.join(", "));
         sql.push_str(")\nVALUES(");
         sql.push_str(&row.sqlize_values());
-        sql.push_str(");");
+        sql.push_str(");\n");
         sql
     }
 }
@@ -170,7 +170,7 @@ mod tests {
 
         let expected = concat!(
             "INSERT INTO dz_nodes(name, position)\n",
-            "VALUES('test', 1);"
+            "VALUES('test', 1);\n"
         );
 
         assert_eq!(

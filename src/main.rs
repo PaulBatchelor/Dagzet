@@ -58,7 +58,12 @@ fn main() {
     let _ = f.write_all(b"COMMIT;\n");
 
     let _ = f.write_all(b"BEGIN;\n");
-    let connectoins: Table<ConnectionsTable> = Table::default();
-    connectoins.generate(&dz, &mut f);
+
+    let connections: Table<ConnectionsTable> = Table::default();
+    connections.generate(&dz, &mut f);
+
+    let lines: Table<LinesTable> = Table::default();
+    lines.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }
