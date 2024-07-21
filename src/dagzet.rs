@@ -697,4 +697,74 @@ mod tests {
             assert_eq!(rm[1], "another line");
         }
     }
+    #[test]
+    #[ignore]
+    fn test_file_range() {
+        let mut dz = DagZet::new();
+        // Does this command even exist?
+        let is_invalid_command = match dz.parse_line_with_result("rm hello remark") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::InvalidCommand),
+        };
+
+        assert!(is_invalid_command, "Command does not exist yet");
+
+        let mut dz = DagZet::new();
+        // attempt to parse lines without selecting a node
+        dz.parse_line("ns aaa");
+
+        let caught_missing_node = match dz.parse_line_with_result("rm hello remark") {
+            Ok(_) => false,
+            Err(rc) => matches!(rc, ReturnCode::NodeNotSelected),
+        };
+
+        assert!(
+            caught_missing_node,
+            "tried to make remark on unselected node",
+        );
+
+        // TODO: make sure expected file range works
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr foo 1 4");
+
+        // TODO: make sure file range is in the valid order
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr foo 4 1");
+
+        // TODO: make sure file range is valid number
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr foo one 4");
+
+        // TODO: file range with one line
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr foo 4");
+
+        // TODO: file range with no lines (whole file)
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr foo");
+
+        // TODO: shorthand working as expected
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("fr foo 1 4");
+        dz.parse_line("nn ccc");
+        let _result = dz.parse_line_with_result("fr $ 3 5");
+
+        // TODO: attempt shorthand without setting file beforehand
+        let mut dz = DagZet::new();
+        dz.parse_line("ns aaa");
+        dz.parse_line("nn bbb");
+        let _result = dz.parse_line_with_result("fr $ 1 4");
+    }
 }
