@@ -202,8 +202,6 @@ impl DagZet {
                     return Err(ReturnCode::NotEnoughArgs);
                 }
 
-                // TODO: add '$' shortcut
-
                 let use_left_shorthand = connect_args[0] == "$";
                 let use_right_shorthand = connect_args[1] == "$";
 
@@ -517,8 +515,6 @@ mod tests {
         };
 
         assert!(result, "Did not catch AlreadyConnected error");
-
-        // TODO: make test for shortcuts
     }
 
     #[test]
