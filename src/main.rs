@@ -65,5 +65,8 @@ fn main() {
     let lines: Table<LinesTable> = Table::default();
     lines.generate(&dz, &mut f);
 
+    let graph_remarks: Table<GraphRemarksTable> = Table::default();
+    graph_remarks.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

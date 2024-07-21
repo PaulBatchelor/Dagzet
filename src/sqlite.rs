@@ -5,6 +5,7 @@ pub enum ParamType {
     TextUnique,
     IntegerPrimaryKey,
     Integer,
+    Text,
 }
 
 pub trait SQLize {
@@ -33,6 +34,7 @@ impl SQLize for ParamType {
             ParamType::TextUnique => "TEXT UNIQUE".to_string(),
             ParamType::IntegerPrimaryKey => "INTEGER PRIMARY KEY".to_string(),
             ParamType::Integer => "INTEGER".to_string(),
+            ParamType::Text => "TEXT".to_string(),
         }
     }
 }

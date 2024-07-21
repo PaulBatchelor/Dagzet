@@ -87,13 +87,6 @@ impl Generate for Table<ConnectionsTable> {
     }
 }
 
-pub struct LinesTable;
-
-pub struct LinesRow<'a> {
-    node: String,
-    lines: &'a Vec<String>,
-}
-
 fn name_lookup(name: &String) -> String {
     format!("(SELECT id from dz_nodes WHERE name IS '{name}' LIMIT 1)")
 }
@@ -110,11 +103,18 @@ fn lines_to_json(lines: &[String]) -> String {
             s
         })
         .collect::<Vec<String>>()
-        .join(", ");
+        .join(",");
     jsonstr.push_str(&vals);
     jsonstr.push(']');
 
     jsonstr
+}
+
+pub struct LinesTable;
+
+pub struct LinesRow<'a> {
+    node: String,
+    lines: &'a Vec<String>,
 }
 
 impl<LinesTable> Row<LinesTable> for LinesRow<'_> {
@@ -144,6 +144,43 @@ impl Generate for Table<LinesTable> {
             let row = LinesRow {
                 node: dz.nodelist[*key as usize - 1].to_string(),
                 lines: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
+
+pub struct GraphRemarksTable;
+
+pub struct GraphRemarksRow<'a> {
+    namespace: String,
+    remarks: &'a Vec<String>,
+}
+
+impl<GraphRemarksTable> Row<GraphRemarksTable> for GraphRemarksRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!("'{}', '{}'", self.namespace, lines_to_json(self.remarks))
+    }
+}
+
+impl Default for Table<GraphRemarksTable> {
+    fn default() -> Self {
+        let mut con: Table<GraphRemarksTable> = Table::new("dz_graph_remarks");
+        con.add_column(&Param::new("namespace", ParamType::Text));
+        con.add_column(&Param::new("remarks", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<GraphRemarksTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.graph_remarks {
+            let row = GraphRemarksRow {
+                namespace: key.to_string(),
+                remarks: val,
             };
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
