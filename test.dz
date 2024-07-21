@@ -1,3 +1,8 @@
+zz small dagzet test file
+zz this should contain most of the dagzet commands
+zz useful for making sure valid SQLite code is
+zz being made.
+
 ns hello
 gr hello dagzet!
 gr these are some graph remarks.

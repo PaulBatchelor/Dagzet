@@ -248,6 +248,7 @@ impl DagZet {
                     rm.push(args.to_string());
                 }
             }
+            "zz" => {}
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -634,5 +635,13 @@ mod tests {
         let edges = dz.generate_edges();
 
         assert!(dz.check_for_loops(&edges).is_err(), "Did not catch cycles");
+    }
+
+    #[test]
+    fn test_comments() {
+        let mut dz = DagZet::new();
+
+        let result = dz.parse_line_with_result("zz this is a comment").is_ok();
+        assert!(result, "Did not properly ignore comment");
     }
 }
