@@ -52,9 +52,13 @@ fn main() {
     // Generate nodes table
     let mut f = io::stdout();
 
-    println!("BEGIN;");
+    let _ = f.write_all(b"BEGIN;\n");
     let nodes: Table<NodesTable> = Table::default();
     nodes.generate(&dz, &mut f);
+    let _ = f.write_all(b"COMMIT;\n");
 
-    println!("COMMIT;");
+    let _ = f.write_all(b"BEGIN;\n");
+    let connectoins: Table<ConnectionsTable> = Table::default();
+    connectoins.generate(&dz, &mut f);
+    let _ = f.write_all(b"COMMIT;\n");
 }

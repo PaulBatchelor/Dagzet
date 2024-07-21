@@ -5,15 +5,15 @@ use crate::DagZet;
 use crate::Param;
 use crate::{ParamType, Row, Table};
 
+pub trait Generate {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write);
+}
+
 pub struct NodesTable;
 
 pub struct NodesRow {
     name: String,
     position: u32,
-}
-
-pub trait Generate {
-    fn generate(&self, dz: &DagZet, f: &mut impl io::Write);
 }
 
 impl<NodesTable> Row<NodesTable> for NodesRow {
@@ -44,5 +44,48 @@ impl Generate for Table<NodesTable> {
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
         }
+        let _ = f.write_all(b"\n");
+    }
+}
+
+pub struct ConnectionsTable;
+
+pub struct ConnectionsRow {
+    left: u32,
+    right: u32,
+}
+
+impl<ConnectionsTable> Row<ConnectionsTable> for ConnectionsRow {
+    fn sqlize_values(&self) -> String {
+        format!("{}, {}", self.left, self.right)
+    }
+}
+
+impl Default for Table<ConnectionsTable> {
+    fn default() -> Self {
+        let mut con: Table<ConnectionsTable> = Table::new("dz_nodes");
+        con.add_column(&Param::new("left", ParamType::Integer));
+        con.add_column(&Param::new("right", ParamType::Integer));
+        con
+    }
+}
+
+impl Generate for Table<ConnectionsTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        // TODO: this was computed already. Reuse instead of
+        // generating again.
+        let edges = dz.generate_edges();
+        for edge in edges {
+            let row = ConnectionsRow {
+                left: edge[0],
+                right: edge[1],
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+
+        let _ = f.write_all(b"\n");
     }
 }
