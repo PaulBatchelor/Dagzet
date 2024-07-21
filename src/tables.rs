@@ -187,3 +187,49 @@ impl Generate for Table<GraphRemarksTable> {
         }
     }
 }
+
+pub struct ConnectionRemarksTable;
+
+pub struct ConnectionRemarksRow<'a> {
+    left: &'a String,
+    right: &'a String,
+    remarks: &'a Vec<String>,
+}
+
+impl<ConnectionRemarksTable> Row<ConnectionRemarksTable> for ConnectionRemarksRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, {}, '{}'",
+            name_lookup(self.left),
+            name_lookup(self.right),
+            lines_to_json(self.remarks)
+        )
+    }
+}
+
+impl Default for Table<ConnectionRemarksTable> {
+    fn default() -> Self {
+        let mut con: Table<ConnectionRemarksTable> = Table::new("dz_connection_remarks");
+        con.add_column(&Param::new("left", ParamType::Integer));
+        con.add_column(&Param::new("right", ParamType::Integer));
+        con.add_column(&Param::new("remarks", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<ConnectionRemarksTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.connection_remarks {
+            let co = &dz.connections[*key];
+            let row = ConnectionRemarksRow {
+                left: &co[0],
+                right: &co[1],
+                remarks: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
