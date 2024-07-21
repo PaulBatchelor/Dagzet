@@ -1,0 +1,14 @@
+ns hello
+gr hello dagzet!
+gr these are some graph remarks.
+
+nn this_is_a_node
+ln this a line for a node
+
+nn another_node
+ln this is another node
+ln this node has two lines
+co $ this_is_a_node
+cr I have made a connection, and am now remarking on it.
+cr Yes, there can be several lines
+cr in this connection remark
