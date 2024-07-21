@@ -227,8 +227,8 @@ impl DagZet {
                     }
                 };
 
-                let left = process_arg(&connect_args[0], use_left_shorthand);
-                let right = process_arg(&connect_args[1], use_right_shorthand);
+                let left = process_arg(connect_args[0], use_left_shorthand);
+                let right = process_arg(connect_args[1], use_right_shorthand);
 
                 if self.already_connected(&left, &right) {
                     return Err(ReturnCode::AlreadyConnected);
@@ -302,16 +302,16 @@ impl DagZet {
     }
 
     #[allow(dead_code)]
-    pub fn check_for_loops(&mut self, edges: &Vec<[u32; 2]>) -> Result<ReturnCode, Vec<[u32; 2]>> {
+    pub fn check_for_loops(&mut self, edges: &[[u32; 2]]) -> Result<ReturnCode, Vec<[u32; 2]>> {
         // Generate set of nodes
         let mut nodelist: HashSet<u32> = HashSet::new();
 
-        for (_, id) in &self.nodes {
+        for id in self.nodes.values() {
             nodelist.insert(*id);
         }
 
         // deep copy edge
-        let mut edges = edges.clone();
+        let mut edges = edges.to_owned();
 
         // Determine initial set of nodes with no incoming nodes
         let mut no_incoming: HashSet<u32> = HashSet::new();
@@ -341,7 +341,7 @@ impl DagZet {
             let mut found_loops: Vec<[u32; 2]> = vec![];
             for edge in &edges {
                 if does_loop_exist(&edges, edge[0], edge[1]) {
-                    found_loops.push(edge.clone());
+                    found_loops.push(*edge);
                 }
             }
 

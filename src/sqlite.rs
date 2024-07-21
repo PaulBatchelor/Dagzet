@@ -109,7 +109,6 @@ mod tests {
 
     struct TestRow {
         name: String,
-        id: u32,
         position: u32,
     }
 
@@ -166,7 +165,6 @@ mod tests {
 
         let row = TestRow {
             name: "test".to_string(),
-            id: 0,
             position: 1,
         };
 
