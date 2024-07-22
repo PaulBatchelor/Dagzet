@@ -304,12 +304,32 @@ impl DagZet {
                 };
 
                 let (start, end) = if args.len() == 2 {
-                    (-1, -1)
+                    let start = match args[1].to_string().parse::<i32>() {
+                        Ok(x) => x,
+
+                        // TODO: better error handling
+                        Err(_) => return Err(ReturnCode::Error),
+                    };
+                    (start, -1)
                 } else if args.len() >= 3 {
-                    (-1, -1)
+                    let start = match args[1].to_string().parse::<i32>() {
+                        Ok(x) => x,
+
+                        // TODO: better error handling
+                        Err(_) => return Err(ReturnCode::Error),
+                    };
+                    let end = match args[2].to_string().parse::<i32>() {
+                        Ok(x) => x,
+                        Err(_) => return Err(ReturnCode::Error),
+                    };
+                    (start, end)
                 } else {
                     (-1, -1)
                 };
+
+                if start >= 0 && end >= 0 && start > end {
+                    return Err(ReturnCode::Error);
+                }
 
                 self.last_filename = Some(filename.clone());
 
@@ -757,47 +777,66 @@ mod tests {
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
-        let result = dz.parse_line_with_result("fr foo 1 4");
-        assert!(result.is_ok(), "full file range doesn't work");
+        dz.parse_line("fr foo 1 4");
+        let fr = &dz.file_ranges[&dz.curnode.unwrap()];
+        assert!(
+            fr.start == 1 && fr.end == 4,
+            "could not properly handle full file range"
+        );
 
-        // TODO: make sure file range is in the valid order
+        // make sure file range is in the valid order
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
         let result = dz.parse_line_with_result("fr foo 4 1");
-        assert!(result.is_ok(), "wrong order for line");
+        assert!(result.is_err(), "wrong order for line not caught");
 
-        // TODO: make sure file range is valid number
+        // make sure file range is valid number
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
         let result = dz.parse_line_with_result("fr foo one 4");
-        assert!(result.is_ok(), "invalid numbers for file range");
+        assert!(
+            result.is_err(),
+            "didn't catch invalid numbers for file range"
+        );
 
-        // TODO: file range with one line
+        // file range with one line
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
-        let result = dz.parse_line_with_result("fr foo 4");
-        assert!(result.is_ok(), "could not handle file range with one line");
+        dz.parse_line("fr foo 4");
+        let fr = &dz.file_ranges[&dz.curnode.unwrap()];
+        assert!(
+            fr.start == 4 && fr.end == -1,
+            "could not handle file range with one line"
+        );
 
-        // TODO: file range with no lines (whole file)
+        // file range with no lines (whole file)
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
-        let result = dz.parse_line_with_result("fr foo");
-        assert!(result.is_ok(), "could not handle file range with no lines");
+        dz.parse_line("fr foo");
+        let fr = &dz.file_ranges[&dz.curnode.unwrap()];
+        assert!(
+            fr.start == -1 && fr.end == -1,
+            "could not handle file range with one line"
+        );
 
-        // TODO: shorthand working as expected
+        // shorthand working as expected
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
         dz.parse_line("fr foo 1 4");
         dz.parse_line("nn ccc");
-        let result = dz.parse_line_with_result("fr $ 3 5");
-        assert!(result.is_ok(), "shorthand not working");
+        dz.parse_line("fr $ 3 5");
+        let fr = &dz.file_ranges[&dz.curnode.unwrap()];
+        assert!(
+            fr.start == 3 && fr.end == 5,
+            "could not handle shorthand as expected"
+        );
 
-        // TODO: attempt shorthand without setting file beforehand
+        // attempt shorthand without setting file beforehand
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
