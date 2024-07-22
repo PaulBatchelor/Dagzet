@@ -31,6 +31,13 @@ impl fmt::Display for ReturnCode {
     }
 }
 
+#[allow(dead_code)]
+pub struct FileRange {
+    filename: String,
+    start: i32,
+    end: i32,
+}
+
 pub struct DagZet {
     /// The current namespace
     pub namespace: Option<String>,
@@ -62,6 +69,11 @@ pub struct DagZet {
 
     /// Remarks can be made about last node selected
     pub node_remarks: HashMap<u32, Vec<String>>,
+
+    /// tie a node to a range of lines of a file
+    pub file_ranges: HashMap<u32, FileRange>,
+
+    last_filename: Option<String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -119,6 +131,8 @@ impl DagZet {
             connections: vec![],
             connection_remarks: HashMap::new(),
             node_remarks: HashMap::new(),
+            file_ranges: HashMap::new(),
+            last_filename: None,
         }
     }
 
@@ -268,7 +282,45 @@ impl DagZet {
                 }
             }
             "fr" => {
-                todo!("file range not implemented yet")
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let args: Vec<_> = args.split_whitespace().collect();
+
+                if args.is_empty() {
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+
+                let filename = if args[0] == "$" {
+                    match &self.last_filename {
+                        Some(x) => x.to_string(),
+                        // TODO: better error handling
+                        None => return Err(ReturnCode::Error),
+                    }
+                } else {
+                    args[0].to_string()
+                };
+
+                let (start, end) = if args.len() == 2 {
+                    (-1, -1)
+                } else if args.len() >= 3 {
+                    (-1, -1)
+                } else {
+                    (-1, -1)
+                };
+
+                self.last_filename = Some(filename.clone());
+
+                self.file_ranges.insert(
+                    curnode,
+                    FileRange {
+                        filename: filename,
+                        start: start,
+                        end: end,
+                    },
+                );
             }
 
             _ => return Err(ReturnCode::InvalidCommand),
@@ -702,9 +754,6 @@ mod tests {
     }
     #[test]
     fn test_file_range() {
-        let mut dz = DagZet::new();
-
-        // TODO: make sure expected file range works
         let mut dz = DagZet::new();
         dz.parse_line("ns aaa");
         dz.parse_line("nn bbb");
