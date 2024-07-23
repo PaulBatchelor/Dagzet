@@ -77,5 +77,8 @@ fn main() {
     let file_ranges: Table<FileRangesTable> = Table::default();
     file_ranges.generate(&dz, &mut f);
 
+    let hyperlinks: Table<HyperlinksTable> = Table::default();
+    hyperlinks.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

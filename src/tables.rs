@@ -319,3 +319,40 @@ impl Generate for Table<FileRangesTable> {
         }
     }
 }
+
+pub struct HyperlinksTable;
+
+pub struct HyperlinksRow<'a> {
+    node: &'a String,
+    hyperlink: &'a String,
+}
+
+impl<HyperlinksTable> Row<HyperlinksTable> for HyperlinksRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!("{}, '{}'", name_lookup(self.node), self.hyperlink)
+    }
+}
+
+impl Default for Table<HyperlinksTable> {
+    fn default() -> Self {
+        let mut con: Table<HyperlinksTable> = Table::new("dz_hyperlinks");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("hyperlink", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<HyperlinksTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.hyperlinks {
+            let row = HyperlinksRow {
+                node: &dz.nodelist[*key as usize - 1],
+                hyperlink: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
