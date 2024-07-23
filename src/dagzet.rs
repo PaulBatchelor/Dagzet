@@ -392,6 +392,24 @@ impl DagZet {
                 }
             }
 
+            "sn" => {
+                let ns = match &self.namespace {
+                    Some(n) => n,
+                    None => return Err(ReturnCode::NameSpaceNotSet),
+                };
+
+                let args: Vec<_> = args.split_whitespace().collect();
+                let nodename = format!("{}/{}", ns, args[0]);
+                let node_id = match self.nodes.get(&nodename) {
+                    Some(x) => x,
+
+                    // TODO: better error handling
+                    None => return Err(ReturnCode::Error),
+                };
+
+                self.curnode = Some(*node_id);
+            }
+
             _ => return Err(ReturnCode::InvalidCommand),
         }
         Ok(ReturnCode::Okay)
@@ -995,5 +1013,27 @@ mod tests {
         let result = dz.parse_line_with_result("tg green_eggs ham green_eggs");
 
         assert!(result.is_err(), "did not error on duplicate tags");
+    }
+
+    #[test]
+    fn test_select_node() {
+        let mut dz = DagZet::new();
+
+        dz.parse_line("ns top");
+        dz.parse_line("nn aaa");
+        dz.parse_line("nn bbb");
+        dz.parse_line("sn aaa");
+
+        let curnode = dz.curnode.unwrap();
+
+        assert_eq!(
+            dz.nodelist[curnode as usize - 1],
+            "top/aaa",
+            "wrong node selected"
+        );
+
+        let result = dz.parse_line_with_result("sn ccc");
+
+        assert!(result.is_err());
     }
 }
