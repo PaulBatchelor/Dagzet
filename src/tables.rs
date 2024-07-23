@@ -356,3 +356,40 @@ impl Generate for Table<HyperlinksTable> {
         }
     }
 }
+
+pub struct TODOTable;
+
+pub struct TODORow<'a> {
+    node: &'a String,
+    todo_item: &'a String,
+}
+
+impl<TODOTable> Row<TODOTable> for TODORow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!("{}, '{}'", name_lookup(self.node), self.todo_item)
+    }
+}
+
+impl Default for Table<TODOTable> {
+    fn default() -> Self {
+        let mut con: Table<TODOTable> = Table::new("dz_todo");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("hyperlink", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<TODOTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.todos {
+            let row = TODORow {
+                node: &dz.nodelist[*key as usize - 1],
+                todo_item: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}

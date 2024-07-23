@@ -25,3 +25,7 @@ fr foo 1 4
 
 nn internet_archive
 hl https://archive.org
+
+nn todo_item
+ln a TODO item
+td make sure this TODO item works

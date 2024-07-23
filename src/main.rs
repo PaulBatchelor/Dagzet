@@ -80,5 +80,8 @@ fn main() {
     let hyperlinks: Table<HyperlinksTable> = Table::default();
     hyperlinks.generate(&dz, &mut f);
 
+    let todos: Table<TODOTable> = Table::default();
+    todos.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }
