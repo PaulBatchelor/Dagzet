@@ -26,7 +26,6 @@ fn main() {
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
     for str in lines_iter {
-        // TODO: handle error
         let result = dz.parse_line_with_result(&str);
 
         match result {

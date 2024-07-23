@@ -98,7 +98,8 @@ fn lines_to_json(lines: &[String]) -> String {
         .iter()
         .map(|x| {
             let mut s = "\"".to_string();
-            s.push_str(x);
+            s.push_str(&x.replace('\'', "''"));
+            //s.push_str(x);
             s.push('"');
             s
         })

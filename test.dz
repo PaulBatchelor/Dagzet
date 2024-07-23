@@ -20,6 +20,8 @@ cr in this connection remark
 tg testing
 
 nn remarkable_node
+ln lines with single quotes shouldn't crash!
+ln escape your strings!
 rm this node has a remark!
 rm what a remarkable node
 fr foo 1 4
