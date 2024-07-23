@@ -81,6 +81,8 @@ pub struct DagZet {
 
     // Add a TODO item, one per node
     pub todos: HashMap<u32, String>,
+
+    pub tags: HashMap<u32, HashSet<String>>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -364,6 +366,8 @@ impl DagZet {
                 };
                 self.todos.insert(curnode, args.to_string());
             }
+
+            "tg" => {}
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -924,5 +928,41 @@ mod tests {
             result.is_err_and(|x| { matches!(x, ReturnCode::NodeNotSelected) }),
             "Did not catch NodeNotSelected"
         );
+    }
+
+    #[test]
+    fn test_tags() {
+        let mut dz = DagZet::new();
+
+        // Test out conventional tag behavior"
+        dz.parse_line("ns seuss");
+        dz.parse_line("nn fishes");
+        dz.parse_line("tg one two red blue");
+
+        let curnode = &dz.curnode.unwrap();
+
+        assert_eq!(dz.tags.len(), 1, "Expected tags to have an item");
+
+        let tags = &dz.tags[curnode];
+
+        assert_eq!(tags.len(), 4, "not enough tags");
+
+        assert!(tags.contains("one"));
+        assert!(tags.contains("two"));
+        assert!(tags.contains("red"));
+        assert!(tags.contains("blue"));
+
+        // Make sure append behavior works
+        dz.parse_line("tg green");
+        let tags = &dz.tags[curnode];
+
+        assert_eq!(tags.len(), 5, "expected one more tag to be appended");
+        assert!(tags.contains("green"));
+
+        // Make sure tag doesn't appear twice
+        dz.parse_line("nn do_not_like");
+        let result = dz.parse_line_with_result("tg green_eggs ham green_eggs");
+
+        assert!(result.is_err(), "did not error on duplicate tags");
     }
 }
