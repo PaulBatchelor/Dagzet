@@ -367,7 +367,28 @@ impl DagZet {
                 self.todos.insert(curnode, args.to_string());
             }
 
-            "tg" => {}
+            "tg" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let tags = &mut self.tags;
+                let args: Vec<_> = args.split_whitespace().collect();
+
+                for arg in &args {
+                    if tags.contains_key(&curnode) {
+                        let dup = tags.get_mut(&curnode).unwrap().insert(arg.to_string());
+                        if dup {
+                            return Err(ReturnCode::Error);
+                        }
+                    } else {
+                        let mut hm = HashSet::new();
+                        hm.insert(arg.to_string());
+                        tags.insert(curnode, hm);
+                    }
+                }
+            }
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -932,6 +953,15 @@ mod tests {
 
     #[test]
     fn test_tags() {
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+        let result = dz.parse_line_with_result("tg oops");
+
+        assert!(
+            result.is_err_and(|x| { matches!(x, ReturnCode::NodeNotSelected) }),
+            "Did not catch NodeNotSelected"
+        );
+
         let mut dz = DagZet::new();
 
         // Test out conventional tag behavior"
