@@ -384,7 +384,7 @@ impl DagZet {
                     }
                 };
 
-                for arg in args.iter() {
+                for arg in &args {
                     if !tags.insert(arg.to_string()) {
                         // TODO: better error handling
                         return Err(ReturnCode::Error);
