@@ -83,5 +83,8 @@ fn main() {
     let todos: Table<TODOTable> = Table::default();
     todos.generate(&dz, &mut f);
 
+    let tags: Table<TagsTable> = Table::default();
+    tags.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

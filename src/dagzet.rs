@@ -386,6 +386,7 @@ impl DagZet {
 
                 for arg in args.iter() {
                     if !tags.insert(arg.to_string()) {
+                        // TODO: better error handling
                         return Err(ReturnCode::Error);
                     }
                 }
@@ -897,7 +898,7 @@ mod tests {
 
     #[test]
     fn test_hyperlinks() {
-        // Test usuual functionality
+        // Test usual functionality
         let mut dz = DagZet::new();
         dz.parse_line("ns links");
         dz.parse_line("nn internet_archive");

@@ -393,3 +393,43 @@ impl Generate for Table<TODOTable> {
         }
     }
 }
+
+pub struct TagsTable;
+
+pub struct TagsRow<'a> {
+    node: &'a String,
+    tag: &'a String,
+}
+
+impl<TagsTable> Row<TagsTable> for TagsRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!("{}, '{}'", name_lookup(self.node), self.tag)
+    }
+}
+
+impl Default for Table<TagsTable> {
+    fn default() -> Self {
+        let mut con: Table<TagsTable> = Table::new("dz_tags");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("tag", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<TagsTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (nodeid, tags) in &dz.tags {
+            // Insert tags as (node,tag) pairs
+            for tag in tags {
+                let row = TagsRow {
+                    node: &dz.nodelist[*nodeid as usize - 1],
+                    tag: &tag,
+                };
+                let str = self.sqlize_insert(&row).to_string();
+                let _ = f.write_all(&str.into_bytes());
+            }
+        }
+    }
+}
