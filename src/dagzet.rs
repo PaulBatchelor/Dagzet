@@ -373,19 +373,20 @@ impl DagZet {
                     _ => return Err(ReturnCode::NodeNotSelected),
                 };
 
-                let tags = &mut self.tags;
+                let tagsmap = &mut self.tags;
                 let args: Vec<_> = args.split_whitespace().collect();
 
-                for arg in &args {
-                    if tags.contains_key(&curnode) {
-                        let dup = tags.get_mut(&curnode).unwrap().insert(arg.to_string());
-                        if dup {
-                            return Err(ReturnCode::Error);
-                        }
-                    } else {
-                        let mut hm = HashSet::new();
-                        hm.insert(arg.to_string());
-                        tags.insert(curnode, hm);
+                let tags = match tagsmap.get_mut(&curnode) {
+                    Some(x) => x,
+                    None => {
+                        tagsmap.insert(curnode, HashSet::new());
+                        tagsmap.get_mut(&curnode).unwrap()
+                    }
+                };
+
+                for arg in args.iter() {
+                    if !tags.insert(arg.to_string()) {
+                        return Err(ReturnCode::Error);
                     }
                 }
             }
@@ -970,7 +971,6 @@ mod tests {
         dz.parse_line("tg one two red blue");
 
         let curnode = &dz.curnode.unwrap();
-
         assert_eq!(dz.tags.len(), 1, "Expected tags to have an item");
 
         let tags = &dz.tags[curnode];
