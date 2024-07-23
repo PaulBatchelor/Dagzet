@@ -1,9 +1,9 @@
-use std::io;
-
 use crate::sqlite::SQLize;
 use crate::DagZet;
+use crate::FileRange;
 use crate::Param;
 use crate::{ParamType, Row, Table};
+use std::io;
 
 pub trait Generate {
     fn generate(&self, dz: &DagZet, f: &mut impl io::Write);
@@ -268,6 +268,51 @@ impl Generate for Table<NodeRemarksTable> {
             let row = NodeRemarksRow {
                 node: &dz.nodelist[*key as usize - 1],
                 remarks: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
+
+pub struct FileRangesTable;
+
+pub struct FileRangesRow<'a> {
+    node: &'a String,
+    file_range: &'a FileRange,
+}
+
+impl<FileRangesTable> Row<FileRangesTable> for FileRangesRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}', {}, {}",
+            name_lookup(self.node),
+            self.file_range.filename,
+            self.file_range.start,
+            self.file_range.end
+        )
+    }
+}
+
+impl Default for Table<FileRangesTable> {
+    fn default() -> Self {
+        let mut con: Table<FileRangesTable> = Table::new("dz_file_ranges");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("filename", ParamType::Text));
+        con.add_column(&Param::new("start", ParamType::Integer));
+        con.add_column(&Param::new("end", ParamType::Integer));
+        con
+    }
+}
+
+impl Generate for Table<FileRangesTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+
+        for (key, val) in &dz.file_ranges {
+            let row = FileRangesRow {
+                node: &dz.nodelist[*key as usize - 1],
+                file_range: val,
             };
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());

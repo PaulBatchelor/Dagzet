@@ -74,5 +74,8 @@ fn main() {
     let node_remarks: Table<NodeRemarksTable> = Table::default();
     node_remarks.generate(&dz, &mut f);
 
+    let file_ranges: Table<FileRangesTable> = Table::default();
+    file_ranges.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

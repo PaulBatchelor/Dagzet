@@ -33,9 +33,9 @@ impl fmt::Display for ReturnCode {
 
 #[allow(dead_code)]
 pub struct FileRange {
-    filename: String,
-    start: i32,
-    end: i32,
+    pub filename: String,
+    pub start: i32,
+    pub end: i32,
 }
 
 pub struct DagZet {
