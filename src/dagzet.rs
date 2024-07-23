@@ -74,6 +74,9 @@ pub struct DagZet {
     pub file_ranges: HashMap<u32, FileRange>,
 
     last_filename: Option<String>,
+
+    // Tie a hyperlink URL to a node. One per node.
+    pub hyperlinks: HashMap<u32, String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -133,6 +136,7 @@ impl DagZet {
             node_remarks: HashMap::new(),
             file_ranges: HashMap::new(),
             last_filename: None,
+            hyperlinks: HashMap::new(),
         }
     }
 
@@ -336,11 +340,25 @@ impl DagZet {
                 self.file_ranges.insert(
                     curnode,
                     FileRange {
-                        filename: filename,
-                        start: start,
-                        end: end,
+                        filename,
+                        start,
+                        end,
                     },
                 );
+            }
+
+            "hl" => {
+                let args: Vec<_> = args.split_whitespace().collect();
+                if args.is_empty() {
+                    // realistically, this error will never happen
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+                self.hyperlinks.insert(curnode, args[0].to_string());
             }
 
             _ => return Err(ReturnCode::InvalidCommand),
@@ -844,6 +862,37 @@ mod tests {
         assert!(
             result.is_err(),
             "shorthand did not fail as it was supposed to"
+        );
+    }
+
+    #[test]
+    fn test_hyperlinks() {
+        // Test usuual functionality
+        let mut dz = DagZet::new();
+        dz.parse_line("ns links");
+        dz.parse_line("nn internet_archive");
+        dz.parse_line("hl http://archive.org");
+
+        assert_eq!(
+            dz.hyperlinks.len(),
+            1,
+            "Expected exactly one entry in hyperlinks"
+        );
+
+        let curnode = &dz.curnode.unwrap();
+
+        let hl = &dz.hyperlinks[curnode];
+
+        assert_eq!(hl, "http://archive.org", "wrong hyperlink found");
+
+        // Test hyperlink without node selected
+        let mut dz = DagZet::new();
+        dz.parse_line("ns links");
+        let result = dz.parse_line_with_result("hl http://archive.org");
+
+        assert!(
+            result.is_err_and(|x| { matches!(x, ReturnCode::NodeNotSelected) }),
+            "Did not catch NodeNotSelected"
         );
     }
 }
