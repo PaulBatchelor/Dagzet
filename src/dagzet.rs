@@ -38,6 +38,7 @@ pub struct FileRange {
     pub end: i32,
 }
 
+#[derive(Default)]
 pub struct DagZet {
     /// The current namespace
     pub namespace: Option<String>,
@@ -77,6 +78,9 @@ pub struct DagZet {
 
     // Tie a hyperlink URL to a node. One per node.
     pub hyperlinks: HashMap<u32, String>,
+
+    // Add a TODO item, one per node
+    pub todos: HashMap<u32, String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -123,21 +127,9 @@ fn nodes_connected_to(node: u32, edges: &Vec<[u32; 2]>) -> HashSet<u32> {
 }
 
 impl DagZet {
+    // TODO: deprecate new()
     pub fn new() -> Self {
-        DagZet {
-            namespace: None,
-            graph_remarks: HashMap::new(),
-            curnode: None,
-            nodes: HashMap::new(),
-            nodelist: vec![],
-            lines: HashMap::new(),
-            connections: vec![],
-            connection_remarks: HashMap::new(),
-            node_remarks: HashMap::new(),
-            file_ranges: HashMap::new(),
-            last_filename: None,
-            hyperlinks: HashMap::new(),
-        }
+        DagZet::default()
     }
 
     #[allow(dead_code)]
@@ -359,6 +351,18 @@ impl DagZet {
                     _ => return Err(ReturnCode::NodeNotSelected),
                 };
                 self.hyperlinks.insert(curnode, args[0].to_string());
+            }
+
+            "td" => {
+                if args.is_empty() {
+                    // realistically, this error will never happen
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+                self.todos.insert(curnode, args.to_string());
             }
 
             _ => return Err(ReturnCode::InvalidCommand),
@@ -889,6 +893,32 @@ mod tests {
         let mut dz = DagZet::new();
         dz.parse_line("ns links");
         let result = dz.parse_line_with_result("hl http://archive.org");
+
+        assert!(
+            result.is_err_and(|x| { matches!(x, ReturnCode::NodeNotSelected) }),
+            "Did not catch NodeNotSelected"
+        );
+    }
+
+    #[test]
+    fn test_todo() {
+        // make sure default behavior works
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+        dz.parse_line("nn aaa");
+        dz.parse_line("td todo item");
+
+        assert_eq!(dz.todos.len(), 1, "Expected TODO item");
+
+        let curnode = &dz.curnode.unwrap();
+
+        let todostr = &dz.todos[curnode];
+
+        assert_eq!(todostr, "todo item", "incorrect TODO item found");
+
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+        let result = dz.parse_line_with_result("td todo item");
 
         assert!(
             result.is_err_and(|x| { matches!(x, ReturnCode::NodeNotSelected) }),
