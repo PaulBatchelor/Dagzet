@@ -33,3 +33,12 @@ tg links web
 nn todo_item
 ln a TODO item
 td make sure this TODO item works
+
+ns another_graph
+gr this is another graph wow
+
+nn interesting_topic
+ln wow what an interesting topic
+
+cx another_graph/interesting_topic hello/remarkable_node
+cr interesting things can sometimes be remarkable
