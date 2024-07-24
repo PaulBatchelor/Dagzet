@@ -83,6 +83,10 @@ pub struct DagZet {
     pub todos: HashMap<u32, String>,
 
     pub tags: HashMap<u32, HashSet<String>>,
+
+    // Any nodes used in the "cx" command get stored here
+    // External nodes will be ignored by the check_unknown_nodes
+    pub xnodes: HashSet<String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -409,6 +413,8 @@ impl DagZet {
 
                 self.curnode = Some(*node_id);
             }
+
+            "cx" => {}
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -1059,5 +1065,26 @@ mod tests {
         dz.parse_line("nn scans");
         let result = dz.check_for_loops(&dz.generate_edges());
         assert!(result.is_ok());
+    }
+
+    // Initial "cx" behavior doesn't need aliases or shorthands
+    // only full path connections
+    #[test]
+    fn test_cx_initial() {
+        let mut dz = DagZet::new();
+        dz.parse_line("cx colors/fishes numbers/fishes");
+        dz.parse_line("cr kinds of fishes in dr.seuss");
+
+        assert_eq!(dz.xnodes.len(), 2, "Expected 2 xnodes");
+        assert_eq!(dz.connections.len(), 1, "Expected 1 connection");
+        assert_eq!(
+            dz.connection_remarks.len(),
+            1,
+            "Expected 1 connection remark"
+        );
+
+        let result = dz.check_unknown_nodes();
+
+        assert!(result.is_empty(), "There shouldn't be any unknown nodes");
     }
 }
