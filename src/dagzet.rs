@@ -1036,4 +1036,23 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[test]
+    // 2024-07-24 Discovered this issue in dagzet, my topsort
+    // cycle checker wasn't implemented correctly
+    fn test_remaining_edges_bug() {
+        let mut dz = DagZet::new();
+        dz.parse_line("ns top");
+        dz.parse_line("nn ink");
+        dz.parse_line("co $ scans");
+        dz.parse_line("nn text");
+        dz.parse_line("nn html");
+        dz.parse_line("nn schedule");
+        dz.parse_line("nn repo");
+        dz.parse_line("co scans $");
+        dz.parse_line("co text $");
+        dz.parse_line("nn scans");
+        let result = dz.check_for_loops(&dz.generate_edges());
+        assert!(result.is_ok());
+    }
 }
