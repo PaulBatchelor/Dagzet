@@ -484,14 +484,19 @@ impl DagZet {
         // Main Loop
 
         while !no_incoming.is_empty() {
-            let new_no_incoming = HashSet::new();
+            let mut new_no_incoming = HashSet::new();
             for n in &no_incoming {
                 let nodesfrom = nodes_connected_to(*n, &edges);
 
                 for m in &nodesfrom {
                     remove_edge(&mut edges, *n, *m);
+
+                    if no_incoming_nodes(*m, &edges) {
+                        new_no_incoming.insert(*m);
+                    }
                 }
             }
+
             no_incoming = new_no_incoming;
         }
         // Look for any remaining edges
