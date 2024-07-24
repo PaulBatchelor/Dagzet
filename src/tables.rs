@@ -49,14 +49,14 @@ impl Generate for Table<NodesTable> {
 
 pub struct ConnectionsTable;
 
-pub struct ConnectionsRow {
-    left: u32,
-    right: u32,
+pub struct ConnectionsRow<'a> {
+    left: &'a String,
+    right: &'a String,
 }
 
-impl<ConnectionsTable> Row<ConnectionsTable> for ConnectionsRow {
+impl<ConnectionsTable> Row<ConnectionsTable> for ConnectionsRow<'_> {
     fn sqlize_values(&self) -> String {
-        format!("{}, {}", self.left, self.right)
+        format!("{}, {}", name_lookup(self.left), name_lookup(self.right))
     }
 }
 
@@ -73,13 +73,10 @@ impl Generate for Table<ConnectionsTable> {
     fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
         let _ = f.write_all(&self.sqlize().into_bytes());
 
-        // TODO: this was computed already. Reuse instead of
-        // generating again.
-        let edges = dz.generate_edges();
-        for edge in edges {
+        for con in &dz.connections {
             let row = ConnectionsRow {
-                left: edge[0],
-                right: edge[1],
+                left: &con[0],
+                right: &con[1],
             };
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
