@@ -85,5 +85,14 @@ fn main() {
     let tags: Table<TagsTable> = Table::default();
     tags.generate(&dz, &mut f);
 
+    let flashcards: Table<FlashCardsTable> = Table::default();
+    flashcards.generate(&dz, &mut f);
+
+    let images: Table<ImagesTable> = Table::default();
+    images.generate(&dz, &mut f);
+
+    let audio: Table<AudioTable> = Table::default();
+    audio.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

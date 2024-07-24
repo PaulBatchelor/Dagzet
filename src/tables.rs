@@ -131,8 +131,8 @@ impl<LinesTable> Row<LinesTable> for LinesRow<'_> {
 impl Default for Table<LinesTable> {
     fn default() -> Self {
         let mut con: Table<LinesTable> = Table::new("dz_lines");
-        con.add_column(&Param::new("left", ParamType::Integer));
-        con.add_column(&Param::new("right", ParamType::Integer));
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("lines", ParamType::Text));
         con
     }
 }
@@ -432,5 +432,66 @@ impl Generate for Table<TagsTable> {
                 let _ = f.write_all(&str.into_bytes());
             }
         }
+    }
+}
+
+// TODO: Implement FlashCardsTable
+
+pub struct FlashCardsTable;
+
+impl Default for Table<FlashCardsTable> {
+    fn default() -> Self {
+        let mut con: Table<FlashCardsTable> = Table::new("dz_flashcards");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("front", ParamType::Text));
+        con.add_column(&Param::new("back", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<FlashCardsTable> {
+    fn generate(&self, _dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+        // TODO: generate flashcard insert statements
+    }
+}
+
+// TODO: Implement ImagesTable
+
+pub struct ImagesTable;
+
+impl Default for Table<ImagesTable> {
+    fn default() -> Self {
+        let mut con: Table<ImagesTable> = Table::new("dz_images");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("image", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<ImagesTable> {
+    fn generate(&self, _dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+        // TODO: generate insert statements
+    }
+}
+
+// TODO: Implement AudioTable
+
+pub struct AudioTable;
+
+impl Default for Table<AudioTable> {
+    fn default() -> Self {
+        let mut con: Table<AudioTable> = Table::new("dz_audio");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("audio", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<AudioTable> {
+    fn generate(&self, _dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+        // TODO: generate insert statements
     }
 }
