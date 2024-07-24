@@ -414,7 +414,30 @@ impl DagZet {
                 self.curnode = Some(*node_id);
             }
 
-            "cx" => {}
+            "cx" => {
+                let args: Vec<_> = args.split_whitespace().collect();
+                if args.len() < 2 {
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+
+                let left = args[0].to_string();
+                let right = args[1].to_string();
+
+                if left == "$" || right == "$" {
+                    todo!("Shorthands not yet implemented");
+                }
+
+                if left.get(0..1).unwrap() == "@" || right.get(0..1).unwrap() == "@" {
+                    todo!("Aliases not yet implemented");
+                }
+
+                if self.already_connected(&left, &right) {
+                    return Err(ReturnCode::AlreadyConnected);
+                }
+                self.xnodes.insert(left.clone());
+                self.xnodes.insert(right.clone());
+                self.connections.push([left, right]);
+            }
 
             _ => return Err(ReturnCode::InvalidCommand),
         }
@@ -443,11 +466,11 @@ impl DagZet {
             let left = &co[0];
             let right = &co[1];
 
-            if !self.nodes.contains_key(left) {
+            if !self.nodes.contains_key(left) && !self.xnodes.contains(left) {
                 unknown_nodes.insert(left.to_string());
             }
 
-            if !self.nodes.contains_key(right) {
+            if !self.nodes.contains_key(right) && !self.xnodes.contains(right) {
                 unknown_nodes.insert(right.to_string());
             }
         }
@@ -1072,6 +1095,13 @@ mod tests {
     #[test]
     fn test_cx_initial() {
         let mut dz = DagZet::new();
+        let result = dz.parse_line_with_result("cx colors/fishes");
+
+        assert!(
+            result.is_err_and(|x| { matches!(x, ReturnCode::NotEnoughArgs) }),
+            "Did not catch NotEnoughArgs"
+        );
+
         dz.parse_line("cx colors/fishes numbers/fishes");
         dz.parse_line("cr kinds of fishes in dr.seuss");
 
@@ -1086,5 +1116,12 @@ mod tests {
         let result = dz.check_unknown_nodes();
 
         assert!(result.is_empty(), "There shouldn't be any unknown nodes");
+
+        let result = dz.parse_line_with_result("cx colors/fishes numbers/fishes");
+
+        assert!(
+            result.is_err_and(|x| { matches!(x, ReturnCode::AlreadyConnected) }),
+            "Did not catch AlreadyConnected"
+        );
     }
 }
