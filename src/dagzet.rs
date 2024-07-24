@@ -481,9 +481,14 @@ impl DagZet {
         let mut edges = vec![];
 
         for co in &self.connections {
-            let left_id = self.nodes.get(&co[0]).unwrap();
-            let right_id = self.nodes.get(&co[1]).unwrap();
-            edges.push([*left_id, *right_id]);
+            let left_id = self.nodes.get(&co[0]);
+            let right_id = self.nodes.get(&co[1]);
+
+            if left_id.is_some() && right_id.is_some() {
+                let left_id = left_id.unwrap();
+                let right_id = right_id.unwrap();
+                edges.push([*left_id, *right_id]);
+            }
         }
 
         edges
