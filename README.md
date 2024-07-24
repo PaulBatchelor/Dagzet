@@ -6,6 +6,8 @@ A graph described in Dagzet gets compiled down into
 SQLite code, which can then be parsed by sqlite to
 be turned into a queryable database.
 
+Dual-licensed under MIT or the [UNLICENSE](https://unlicense.org).
+
 ## Installation
 Compile and install locally with:
 
