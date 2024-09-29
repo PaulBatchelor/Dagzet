@@ -1,6 +1,7 @@
 use crate::sqlite::SQLize;
 use crate::DagZet;
 use crate::FileRange;
+use crate::FlashCard;
 use crate::Param;
 use crate::{ParamType, Row, Table};
 use std::io;
@@ -435,9 +436,23 @@ impl Generate for Table<TagsTable> {
     }
 }
 
-// TODO: Implement FlashCardsTable
-
 pub struct FlashCardsTable;
+
+pub struct FlashCardsRow<'a> {
+    node: String,
+    card: &'a FlashCard,
+}
+
+impl<FlashCardsTable> Row<FlashCardsTable> for FlashCardsRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}', '{}'",
+            name_lookup(&self.node),
+            lines_to_json(&self.card.front),
+            lines_to_json(&self.card.back),
+        )
+    }
+}
 
 impl Default for Table<FlashCardsTable> {
     fn default() -> Self {
@@ -450,9 +465,17 @@ impl Default for Table<FlashCardsTable> {
 }
 
 impl Generate for Table<FlashCardsTable> {
-    fn generate(&self, _dz: &DagZet, f: &mut impl io::Write) {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
         let _ = f.write_all(&self.sqlize().into_bytes());
-        // TODO: generate flashcard insert statements
+
+        for (key, val) in &dz.flashcards {
+            let row = FlashCardsRow {
+                node: dz.nodelist[*key as usize - 1].to_string(),
+                card: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
     }
 }
 
