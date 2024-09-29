@@ -38,6 +38,13 @@ pub struct FileRange {
     pub end: i32,
 }
 
+#[allow(dead_code)]
+#[derive(Default)]
+pub struct FlashCard {
+    pub front: Vec<String>,
+    pub back: Vec<String>,
+}
+
 #[derive(Default)]
 pub struct DagZet {
     /// The current namespace
@@ -87,6 +94,8 @@ pub struct DagZet {
     // Any nodes used in the "cx" command get stored here
     // External nodes will be ignored by the check_unknown_nodes
     pub xnodes: HashSet<String>,
+
+    pub flashcards: HashMap<u32, FlashCard>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -437,6 +446,44 @@ impl DagZet {
                 self.xnodes.insert(left.clone());
                 self.xnodes.insert(right.clone());
                 self.connections.push([left, right]);
+            }
+
+            "ff" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let flashcards = &mut self.flashcards;
+
+                let card = match flashcards.get_mut(&curnode) {
+                    Some(x) => x,
+                    None => {
+                        flashcards.insert(curnode, FlashCard::default());
+                        flashcards.get_mut(&curnode).unwrap()
+                    }
+                };
+
+                card.front.push(args.to_string());
+            }
+
+            "fb" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let flashcards = &mut self.flashcards;
+
+                let card = match flashcards.get_mut(&curnode) {
+                    Some(x) => x,
+                    None => {
+                        flashcards.insert(curnode, FlashCard::default());
+                        flashcards.get_mut(&curnode).unwrap()
+                    }
+                };
+
+                card.back.push(args.to_string());
             }
 
             _ => return Err(ReturnCode::InvalidCommand),
@@ -1128,5 +1175,31 @@ mod tests {
             result.is_err_and(|x| { matches!(x, ReturnCode::AlreadyConnected) }),
             "Did not catch AlreadyConnected"
         );
+    }
+
+    #[test]
+    fn test_cx_flashcard() {
+        let mut dz = DagZet::new();
+        dz.parse_line("ns test");
+        dz.parse_line("nn a");
+        dz.parse_line("ff front of card");
+        dz.parse_line("fb back of card");
+
+        let curnode = &dz.curnode.unwrap();
+        assert!(dz.flashcards.contains_key(curnode));
+
+        let card = dz.flashcards.get(curnode).unwrap();
+        assert!(card.front.len() == 1);
+        assert!(card.front[0] == "front of card");
+        assert!(card.back.len() == 1);
+        assert!(card.back[0] == "back of card");
+
+        dz.parse_line("nn b");
+        dz.parse_line("ff one");
+        dz.parse_line("ff two");
+        let curnode = &dz.curnode.unwrap();
+        let card = dz.flashcards.get(curnode).unwrap();
+        assert!(card.front.len() == 2);
+        assert!(card.back.is_empty());
     }
 }
