@@ -37,9 +37,11 @@ fn main() {
     }
 
     let unknowns = dz.check_unknown_nodes();
-
     if !unknowns.is_empty() {
-        panic!("There were some unknown nodes");
+        panic!(
+            "There were some unknown nodes: {}",
+            unknowns.into_iter().collect::<Vec<_>>().join(", ")
+        );
     }
 
     let result = dz.check_for_loops(&dz.generate_edges());
