@@ -47,7 +47,18 @@ fn main() {
     let result = dz.check_for_loops(&dz.generate_edges());
 
     if result.is_err() {
-        panic!("Loops found")
+        let found_loops = result.unwrap_err();
+        let loop_str = found_loops
+            .iter()
+            .map(|e| {
+                format!(
+                    "{} -> {}",
+                    dz.nodelist[e[0] as usize], dz.nodelist[e[1] as usize]
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        panic!("Loops found: {}", loop_str)
     }
 
     // Generate nodes table

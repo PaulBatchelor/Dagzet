@@ -15,6 +15,12 @@ pub enum ReturnCode {
     NoConnections,
 }
 
+impl fmt::Debug for ReturnCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("TODO: implement debug trait")
+    }
+}
+
 impl fmt::Display for ReturnCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
