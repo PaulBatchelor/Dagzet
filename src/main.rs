@@ -53,7 +53,8 @@ fn main() {
             .map(|e| {
                 format!(
                     "{} -> {}",
-                    dz.nodelist[e[0] as usize], dz.nodelist[e[1] as usize]
+                    dz.nodelist[(e[0] - 1) as usize],
+                    dz.nodelist[(e[1] - 1) as usize]
                 )
             })
             .collect::<Vec<_>>()
