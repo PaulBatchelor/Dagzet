@@ -25,15 +25,17 @@ fn main() {
 
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
+    let mut linum = 1;
     for str in lines_iter {
         let result = dz.parse_line_with_result(&str);
 
         match result {
             Ok(_) => {}
             Err(rc) => {
-                panic!("error: {}", rc)
+                panic!("Error on line {}: {}\nContext:'{}'", linum, rc, &str)
             }
         };
+        linum += 1;
     }
 
     let unknowns = dz.check_unknown_nodes();
