@@ -492,6 +492,26 @@ impl DagZet {
                 card.back.push(args.to_string());
             }
 
+            "im" => {
+                todo!("im command not yet implemented");
+            }
+
+            "eq" => {
+                todo!("eq command not yet implemented");
+            }
+
+            "pg" => {
+                todo!("pg command not yet implemented");
+            }
+
+            "al" => {
+                todo!("al command not yet implemented");
+            }
+
+            "au" => {
+                todo!("au command not yet implemented");
+            }
+
             _ => return Err(ReturnCode::InvalidCommand),
         }
         Ok(ReturnCode::Okay)
