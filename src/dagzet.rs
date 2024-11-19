@@ -1204,7 +1204,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cx_flashcard() {
+    fn test_flashcard() {
         let mut dz = DagZet::new();
         dz.parse_line("ns test");
         dz.parse_line("nn a");
