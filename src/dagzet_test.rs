@@ -594,3 +594,18 @@ fn test_flashcard() {
     assert!(card.front.len() == 2);
     assert!(card.back.is_empty());
 }
+
+#[test]
+fn test_image() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a");
+    dz.parse_line("nn b");
+    dz.parse_line("im c.jpg");
+
+    assert_eq!(dz.images.len(), 1);
+    let curnode = dz.curnode.unwrap();
+
+    let filename = &dz.images.get(&curnode).unwrap();
+
+    assert_eq!(filename, &"c.jpg");
+}

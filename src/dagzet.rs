@@ -102,6 +102,8 @@ pub struct DagZet {
     pub xnodes: HashSet<String>,
 
     pub flashcards: HashMap<u32, FlashCard>,
+
+    pub images: HashMap<u32, String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -493,7 +495,14 @@ impl DagZet {
             }
 
             "im" => {
-                todo!("im command not yet implemented");
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let images = &mut self.images;
+
+                images.insert(curnode, args.to_string());
             }
 
             "eq" => {

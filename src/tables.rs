@@ -479,9 +479,18 @@ impl Generate for Table<FlashCardsTable> {
     }
 }
 
-// TODO: Implement ImagesTable
-
 pub struct ImagesTable;
+
+pub struct ImagesRow<'a> {
+    node: &'a String,
+    filename: &'a String,
+}
+
+impl<ImagesTable> Row<ImagesTable> for ImagesRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!("{}, '{}'", name_lookup(self.node), self.filename)
+    }
+}
 
 impl Default for Table<ImagesTable> {
     fn default() -> Self {
@@ -493,9 +502,16 @@ impl Default for Table<ImagesTable> {
 }
 
 impl Generate for Table<ImagesTable> {
-    fn generate(&self, _dz: &DagZet, f: &mut impl io::Write) {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
         let _ = f.write_all(&self.sqlize().into_bytes());
-        // TODO: generate insert statements
+        for (key, val) in &dz.images {
+            let row = ImagesRow {
+                node: &dz.nodelist[*key as usize - 1].to_string(),
+                filename: val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
     }
 }
 

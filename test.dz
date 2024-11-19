@@ -47,3 +47,9 @@ nn flashcards
 ln this is a flashcard
 ff front side of card
 fb back side of card
+
+ns a
+
+nn image
+ln a node with an image
+im an_image.jpg
