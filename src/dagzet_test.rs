@@ -609,3 +609,18 @@ fn test_image() {
 
     assert_eq!(filename, &"c.jpg");
 }
+
+#[test]
+fn test_audio() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a");
+    dz.parse_line("nn b");
+    dz.parse_line("au c.mp3");
+
+    assert_eq!(dz.audio.len(), 1);
+    let curnode = dz.curnode.unwrap();
+
+    let filename = &dz.audio.get(&curnode).unwrap();
+
+    assert_eq!(filename, &"c.mp3");
+}

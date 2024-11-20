@@ -9,6 +9,7 @@ EOM
     if [ ! "$RC" -eq "$COUNT" ]
     then
         echo "Table $TABLE: expected $COUNT rows, got $RC"
+        exit 1
     fi
 }
 
@@ -16,3 +17,4 @@ EOM
 cargo run test.dz | sqlite3 a.db
 
 table_count dz_images 1
+table_count dz_audio 1

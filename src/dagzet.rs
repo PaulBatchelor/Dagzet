@@ -103,7 +103,9 @@ pub struct DagZet {
 
     pub flashcards: HashMap<u32, FlashCard>,
 
+    // multimedia: images and audio map nodes to filenames
     pub images: HashMap<u32, String>,
+    pub audio: HashMap<u32, String>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -518,7 +520,12 @@ impl DagZet {
             }
 
             "au" => {
-                todo!("au command not yet implemented");
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                self.audio.insert(curnode, args.to_string());
             }
 
             _ => return Err(ReturnCode::InvalidCommand),
