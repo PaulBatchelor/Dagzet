@@ -624,3 +624,17 @@ fn test_audio() {
 
     assert_eq!(filename, &"c.mp3");
 }
+
+#[test]
+fn test_cx_shorthand() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns g");
+    dz.parse_line("nn a");
+    dz.parse_line("nn b");
+    dz.parse_line("sn a");
+    dz.parse_line("cx g/b $");
+
+    assert_eq!(dz.connections.len(), 1);
+    assert_eq!(&dz.connections[0][0], "g/b");
+    assert_eq!(&dz.connections[0][1], "g/a");
+}

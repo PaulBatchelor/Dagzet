@@ -439,11 +439,22 @@ impl DagZet {
                     return Err(ReturnCode::NotEnoughArgs);
                 }
 
-                let left = args[0].to_string();
-                let right = args[1].to_string();
+                let mut left = args[0].to_string();
+                let mut right = args[1].to_string();
 
                 if left == "$" || right == "$" {
-                    todo!("Shorthands not yet implemented");
+                    let curnode = match &self.curnode {
+                        Some(x) => x,
+                        None => return Err(ReturnCode::NodeNotSelected),
+                    };
+
+                    let curnode = *curnode as usize;
+
+                    if left == "$" {
+                        left = self.nodelist[curnode - 1].to_string();
+                    } else {
+                        right = self.nodelist[curnode - 1].to_string();
+                    }
                 }
 
                 if left.get(0..1).unwrap() == "@" || right.get(0..1).unwrap() == "@" {
