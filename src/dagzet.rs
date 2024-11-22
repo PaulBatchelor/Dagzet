@@ -457,6 +457,21 @@ impl DagZet {
                     }
                 }
 
+                // shorthand: substitute with previous connection
+                if left == "^" || right == "^" {
+                    if self.connections.len() == 0 {
+                        return Err(ReturnCode::NoConnections);
+                    }
+                    let cid: usize = self.connections.len() - 1;
+                    if left == "^" {
+                        left = self.connections[cid][0].to_string();
+                    }
+
+                    if right == "^" {
+                        right = self.connections[cid][1].to_string();
+                    }
+                }
+
                 if left.get(0..1).unwrap() == "@" || right.get(0..1).unwrap() == "@" {
                     todo!("Aliases not yet implemented");
                 }

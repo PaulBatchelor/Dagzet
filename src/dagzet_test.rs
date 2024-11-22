@@ -626,7 +626,7 @@ fn test_audio() {
 }
 
 #[test]
-fn test_cx_shorthand() {
+fn test_cx_shorthand_curnode() {
     let mut dz = DagZet::new();
     dz.parse_line("ns g");
     dz.parse_line("nn a");
@@ -637,4 +637,15 @@ fn test_cx_shorthand() {
     assert_eq!(dz.connections.len(), 1);
     assert_eq!(&dz.connections[0][0], "g/b");
     assert_eq!(&dz.connections[0][1], "g/a");
+}
+
+#[test]
+fn test_cx_shorthand_prev() {
+    let mut dz = DagZet::new();
+    dz.parse_line("cx a b");
+    dz.parse_line("cx c ^");
+    dz.parse_line("cx ^ d");
+
+    let expected = [["a", "b"], ["c", "b"], ["c", "d"]];
+    assert_eq!(dz.connections, expected);
 }
