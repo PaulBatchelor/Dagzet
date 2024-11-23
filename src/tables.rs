@@ -376,7 +376,7 @@ impl Default for Table<TODOTable> {
     fn default() -> Self {
         let mut con: Table<TODOTable> = Table::new("dz_todo");
         con.add_column(&Param::new("node", ParamType::Integer));
-        con.add_column(&Param::new("hyperlink", ParamType::Text));
+        con.add_column(&Param::new("task", ParamType::Text));
         con
     }
 }
