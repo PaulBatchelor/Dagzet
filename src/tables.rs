@@ -373,7 +373,11 @@ pub struct TODORow<'a> {
 
 impl<TODOTable> Row<TODOTable> for TODORow<'_> {
     fn sqlize_values(&self) -> String {
-        format!("{}, '{}'", name_lookup(self.node), self.todo_item)
+        format!(
+            "{}, '{}'",
+            name_lookup(self.node),
+            escape_quotes(self.todo_item)
+        )
     }
 }
 
