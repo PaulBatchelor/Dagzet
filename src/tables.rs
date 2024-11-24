@@ -1,3 +1,4 @@
+use crate::escape_quotes;
 use crate::sqlite::SQLize;
 use crate::DagZet;
 use crate::FileRange;
@@ -331,7 +332,11 @@ pub struct HyperlinksRow<'a> {
 
 impl<HyperlinksTable> Row<HyperlinksTable> for HyperlinksRow<'_> {
     fn sqlize_values(&self) -> String {
-        format!("{}, '{}'", name_lookup(self.node), self.hyperlink)
+        format!(
+            "{}, '{}'",
+            name_lookup(self.node),
+            escape_quotes(&self.hyperlink)
+        )
     }
 }
 

@@ -103,6 +103,18 @@ impl<T> Table<T> {
     }
 }
 
+pub fn escape_quotes(str: &String) -> String {
+    let mut escaped = String::new();
+
+    for s in str.chars() {
+        escaped.push(s);
+        if s == '\'' {
+            escaped.push(s);
+        }
+    }
+    escaped
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,5 +192,14 @@ mod tests {
             expected,
             "Did not generate expected INSERT statement"
         );
+    }
+
+    #[test]
+    fn test_escape_quote() {
+        let str = "There's a need to escape this string.".to_string();
+
+        let escaped = escape_quotes(&str);
+
+        assert_eq!(&escaped, "There''s a need to escape this string.");
     }
 }
