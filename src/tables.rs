@@ -65,8 +65,8 @@ impl<ConnectionsTable> Row<ConnectionsTable> for ConnectionsRow<'_> {
 impl Default for Table<ConnectionsTable> {
     fn default() -> Self {
         let mut con: Table<ConnectionsTable> = Table::new("dz_connections");
-        con.add_column(&Param::new("left", ParamType::Integer));
-        con.add_column(&Param::new("right", ParamType::Integer));
+        con.add_column(&Param::new("left", ParamType::IntegerNotNull));
+        con.add_column(&Param::new("right", ParamType::IntegerNotNull));
         con
     }
 }
