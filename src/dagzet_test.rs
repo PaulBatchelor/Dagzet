@@ -669,15 +669,17 @@ fn test_doubledot() {
 fn test_doubledot_connection() {
     let mut dz = DagZet::new();
     dz.parse_line("ns g");
+    dz.parse_line("nn abc");
     dz.parse_line("nn abc/def/ghi");
-    dz.parse_line("ns abc/def/ghi");
+    dz.parse_line("nn xyz/mno");
+    dz.parse_line("co ../../abc $");
+
+    dz.parse_line("ns g/abc/def/ghi");
     dz.parse_line("nn jkl");
-    dz.parse_line("co $ ../ghi");
-    dz.parse_line("nn mno");
-    dz.parse_line("co ../.. $");
+    dz.parse_line("co $ ..");
 
     assert_eq!(dz.connections.len(), 2);
 
-    assert_eq!(dz.connections[0], ["abc/def/ghi/jkl", "abc/def/ghi"]);
-    assert_eq!(dz.connections[1], ["abc", "abc/def/ghi/mno"]);
+    assert_eq!(dz.connections[1], ["g/abc/def/ghi/jkl", "g/abc/def/ghi"]);
+    assert_eq!(dz.connections[0], ["g/abc", "g/xyz/mno"]);
 }

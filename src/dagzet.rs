@@ -151,7 +151,6 @@ fn nodes_connected_to(node: u32, edges: &Vec<[u32; 2]>) -> HashSet<u32> {
     connected
 }
 
-#[allow(dead_code)]
 fn doubledot(fullpath: &str, path: &str) -> String {
     let fullpath: Vec<&str> = fullpath.split('/').collect();
     let path: Vec<&str> = path.split('/').collect();
@@ -267,7 +266,10 @@ impl DagZet {
                 let use_left_doubledot = connect_args[0].contains("..");
                 let use_right_doubledot = connect_args[1].contains("..");
 
-                let curnode = if use_left_shorthand || use_right_shorthand {
+                let shorthand_used = use_left_shorthand || use_right_shorthand;
+                let doubledot_used = use_left_doubledot || use_right_doubledot;
+
+                let curnode = if shorthand_used || doubledot_used {
                     match self.curnode {
                         Some(x) => Some(&self.nodelist[x as usize - 1]),
                         None => return Err(ReturnCode::NodeNotSelected),
@@ -278,7 +280,7 @@ impl DagZet {
 
                 let process_arg = |arg: &str, use_shorthand: bool, use_doubledot: bool| -> String {
                     if use_doubledot {
-                        return doubledot(ns, arg);
+                        return doubledot(curnode.unwrap(), arg);
                     }
 
                     if use_shorthand {
