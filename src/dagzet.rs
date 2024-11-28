@@ -151,6 +151,27 @@ fn nodes_connected_to(node: u32, edges: &Vec<[u32; 2]>) -> HashSet<u32> {
     connected
 }
 
+#[allow(dead_code)]
+fn doubledot(fullpath: &str, path: &str) -> String {
+    let fullpath: Vec<&str> = fullpath.split('/').collect();
+    let path: Vec<&str> = path.split('/').collect();
+    let mut offset = 0;
+    let mut out: Vec<&str> = vec![];
+
+    for name in &fullpath {
+        out.push(name);
+    }
+
+    for name in &path {
+        if *name == ".." {
+            out.pop();
+        } else {
+            out.push(name);
+        }
+    }
+    out.join("/")
+}
+
 impl DagZet {
     // TODO: deprecate new()
     pub fn new() -> Self {

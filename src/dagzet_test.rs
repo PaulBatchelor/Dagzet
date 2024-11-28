@@ -649,3 +649,18 @@ fn test_cx_shorthand_prev() {
     let expected = [["a", "b"], ["c", "b"], ["c", "d"]];
     assert_eq!(dz.connections, expected);
 }
+
+#[test]
+fn test_doubledot() {
+    let path = doubledot("abc/def", "..");
+    assert_eq!(path, "abc");
+
+    let path = doubledot("abc/def", "../ghi");
+    assert_eq!(path, "abc/ghi");
+
+    let path = doubledot("abc/def/ghi", "../../jkl");
+    assert_eq!(path, "abc/jkl");
+
+    let path = doubledot("abc", "../");
+    assert_eq!(path, "");
+}
