@@ -664,3 +664,20 @@ fn test_doubledot() {
     let path = doubledot("abc", "../");
     assert_eq!(path, "");
 }
+
+#[test]
+fn test_doubledot_connection() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns g");
+    dz.parse_line("nn abc/def/ghi");
+    dz.parse_line("ns abc/def/ghi");
+    dz.parse_line("nn jkl");
+    dz.parse_line("co $ ../ghi");
+    dz.parse_line("nn mno");
+    dz.parse_line("co ../.. $");
+
+    assert_eq!(dz.connections.len(), 2);
+
+    assert_eq!(dz.connections[0], ["abc/def/ghi/jkl", "abc/def/ghi"]);
+    assert_eq!(dz.connections[1], ["abc", "abc/def/ghi/mno"]);
+}

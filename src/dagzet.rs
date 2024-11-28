@@ -155,7 +155,6 @@ fn nodes_connected_to(node: u32, edges: &Vec<[u32; 2]>) -> HashSet<u32> {
 fn doubledot(fullpath: &str, path: &str) -> String {
     let fullpath: Vec<&str> = fullpath.split('/').collect();
     let path: Vec<&str> = path.split('/').collect();
-    let mut offset = 0;
     let mut out: Vec<&str> = vec![];
 
     for name in &fullpath {
@@ -265,6 +264,9 @@ impl DagZet {
                 let use_left_shorthand = connect_args[0] == "$";
                 let use_right_shorthand = connect_args[1] == "$";
 
+                let use_left_doubledot = connect_args[0].contains("..");
+                let use_right_doubledot = connect_args[1].contains("..");
+
                 let curnode = if use_left_shorthand || use_right_shorthand {
                     match self.curnode {
                         Some(x) => Some(&self.nodelist[x as usize - 1]),
@@ -274,7 +276,11 @@ impl DagZet {
                     None
                 };
 
-                let process_arg = |arg: &str, use_shorthand: bool| -> String {
+                let process_arg = |arg: &str, use_shorthand: bool, use_doubledot: bool| -> String {
+                    if use_doubledot {
+                        return doubledot(ns, arg);
+                    }
+
                     if use_shorthand {
                         curnode.unwrap().to_string()
                     } else {
@@ -285,8 +291,8 @@ impl DagZet {
                     }
                 };
 
-                let left = process_arg(connect_args[0], use_left_shorthand);
-                let right = process_arg(connect_args[1], use_right_shorthand);
+                let left = process_arg(connect_args[0], use_left_shorthand, use_left_doubledot);
+                let right = process_arg(connect_args[1], use_right_shorthand, use_right_doubledot);
 
                 if self.already_connected(&left, &right) {
                     return Err(ReturnCode::AlreadyConnected);
