@@ -683,3 +683,24 @@ fn test_doubledot_connection() {
     assert_eq!(dz.connections[1], ["g/abc/def/ghi/jkl", "g/abc/def/ghi"]);
     assert_eq!(dz.connections[0], ["g/abc", "g/xyz/mno"]);
 }
+
+#[test]
+fn test_doubledot_namespace() {
+    let mut dz = DagZet::new();
+
+    dz.parse_line("ns a/b");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/b");
+
+    dz.parse_line("ns ../c");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/c");
+
+    dz.parse_line("ns ../d/e");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/d/e");
+
+    dz.parse_line("ns ../../../d/e");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "d/e");
+}

@@ -195,7 +195,12 @@ impl DagZet {
 
         match cmd {
             "ns" => {
-                self.namespace = Some(args.to_string());
+                let mut new_namespace = args.to_string();
+                if new_namespace.contains("..") {
+                    let old_namespace = self.namespace.as_ref().unwrap();
+                    new_namespace = doubledot(old_namespace, &new_namespace);
+                }
+                self.namespace = Some(new_namespace);
             }
             "gr" => {
                 let gr = &mut self.graph_remarks;
