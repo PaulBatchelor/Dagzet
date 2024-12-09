@@ -703,6 +703,10 @@ fn test_doubledot_namespace() {
     dz.parse_line("ns ../../../d/e");
     let ns = dz.namespace.as_ref().unwrap();
     assert_eq!(ns, "d/e");
+
+    dz.parse_line("ns ..");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "d");
 }
 
 #[test]
