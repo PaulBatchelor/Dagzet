@@ -704,3 +704,24 @@ fn test_doubledot_namespace() {
     let ns = dz.namespace.as_ref().unwrap();
     assert_eq!(ns, "d/e");
 }
+
+#[test]
+fn test_append_namespace() {
+    let mut dz = DagZet::new();
+
+    dz.parse_line("ns a");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a");
+
+    dz.parse_line("ns +b");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/b");
+
+    dz.parse_line("ns +c");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/b/c");
+
+    dz.parse_line("ns +d/e");
+    let ns = dz.namespace.as_ref().unwrap();
+    assert_eq!(ns, "a/b/c/d/e");
+}

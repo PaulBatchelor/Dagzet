@@ -199,6 +199,10 @@ impl DagZet {
                 if new_namespace.contains("..") {
                     let old_namespace = self.namespace.as_ref().unwrap();
                     new_namespace = doubledot(old_namespace, &new_namespace);
+                } else if new_namespace.contains('+') {
+                    let old_namespace = self.namespace.as_ref().unwrap();
+                    new_namespace =
+                        old_namespace.to_string() + "/" + new_namespace.get(1..).unwrap();
                 }
                 self.namespace = Some(new_namespace);
             }
