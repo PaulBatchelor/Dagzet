@@ -60,8 +60,8 @@ fn main() {
                 )
             })
             .collect::<Vec<_>>()
-            .join(",");
-        panic!("Loops found: {}", loop_str)
+            .join(",\n");
+        panic!("Loops found:\n{}", loop_str)
     }
 
     // Generate nodes table

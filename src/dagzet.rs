@@ -702,7 +702,13 @@ impl DagZet {
             } else {
                 // If there are remaining edges but no loops,
                 // panic. That's weird and probably shouldn't happen?
-                panic!("Not sure why there are remaining edges.");
+                //panic!("Not sure why there are remaining edges.");
+                //
+                // larger loops detected
+                for edge in &edges {
+                    found_loops.push(*edge);
+                }
+                return Err(found_loops);
             }
         }
 
