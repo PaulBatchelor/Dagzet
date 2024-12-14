@@ -559,3 +559,73 @@ impl Generate for Table<AudioTable> {
         }
     }
 }
+
+pub struct NodeRefsTable;
+
+pub struct NodeRefsRow<'a> {
+    node: &'a String,
+    filename: &'a String,
+    linum: u32,
+}
+
+impl<NodeRefsTable> Row<NodeRefsTable> for NodeRefsRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}', {}",
+            name_lookup(self.node),
+            self.filename,
+            self.linum
+        )
+    }
+}
+
+impl Default for Table<NodeRefsTable> {
+    fn default() -> Self {
+        let mut con: Table<NodeRefsTable> = Table::new("dz_noderefs");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("filename", ParamType::Text));
+        con.add_column(&Param::new("linum", ParamType::Integer));
+        con
+    }
+}
+
+impl Generate for Table<NodeRefsTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        self.generate_with_filename(dz, f, None);
+        //let _ = f.write_all(&self.sqlize().into_bytes());
+        //for (key, val) in &dz.noderefs {
+        //    let row = NodeRefsRow {
+        //        node: &dz.nodelist[*key as usize - 1].to_string(),
+        //        filename: &"filename".to_string(),
+        //        linum: *val,
+        //    };
+        //    let str = self.sqlize_insert(&row).to_string();
+        //    let _ = f.write_all(&str.into_bytes());
+        //}
+    }
+}
+
+impl Table<NodeRefsTable> {
+    pub fn generate_with_filename(
+        &self,
+        dz: &DagZet,
+        f: &mut impl io::Write,
+        filename: Option<&String>,
+    ) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+        let emptystring = "".to_string();
+        let filename = match filename {
+            Some(x) => x,
+            None => &emptystring,
+        };
+        for (key, val) in &dz.noderefs {
+            let row = NodeRefsRow {
+                node: &dz.nodelist[*key as usize - 1].to_string(),
+                filename,
+                linum: *val,
+            };
+            let str = self.sqlize_insert(&row).to_string();
+            let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}

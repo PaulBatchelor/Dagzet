@@ -26,7 +26,9 @@ fn main() {
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
     let mut linum = 1;
+
     for str in lines_iter {
+        dz.linum = linum;
         let result = dz.parse_line_with_result(&str);
 
         match result {
@@ -109,6 +111,9 @@ fn main() {
 
     let audio: Table<AudioTable> = Table::default();
     audio.generate(&dz, &mut f);
+
+    let noderefs: Table<NodeRefsTable> = Table::default();
+    noderefs.generate_with_filename(&dz, &mut f, Some(&filename.to_string()));
 
     let _ = f.write_all(b"COMMIT;\n");
 }

@@ -106,6 +106,9 @@ pub struct DagZet {
     // multimedia: images and audio map nodes to filenames
     pub images: HashMap<u32, String>,
     pub audio: HashMap<u32, String>,
+
+    pub noderefs: HashMap<u32, u32>,
+    pub linum: u32,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -242,6 +245,10 @@ impl DagZet {
                 nodes.insert(nodename, node_id);
 
                 self.curnode = Some(node_id);
+
+                // add line number reference
+
+                self.noderefs.insert(node_id, self.linum);
             }
             "ln" => {
                 let curnode = match &self.curnode {
