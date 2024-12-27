@@ -6,6 +6,7 @@ use crate::FlashCard;
 use crate::Param;
 use crate::{ParamType, Row, Table};
 use std::io;
+use std::ops::Not;
 
 pub trait Generate {
     fn generate(&self, dz: &DagZet, f: &mut impl io::Write);
@@ -591,17 +592,7 @@ impl Default for Table<NodeRefsTable> {
 
 impl Generate for Table<NodeRefsTable> {
     fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
-        self.generate_with_filename(dz, f, None);
-        //let _ = f.write_all(&self.sqlize().into_bytes());
-        //for (key, val) in &dz.noderefs {
-        //    let row = NodeRefsRow {
-        //        node: &dz.nodelist[*key as usize - 1].to_string(),
-        //        filename: &"filename".to_string(),
-        //        linum: *val,
-        //    };
-        //    let str = self.sqlize_insert(&row).to_string();
-        //    let _ = f.write_all(&str.into_bytes());
-        //}
+        self.generate_with_filename(dz, f, None, 0, 0);
     }
 }
 
@@ -611,6 +602,8 @@ impl Table<NodeRefsTable> {
         dz: &DagZet,
         f: &mut impl io::Write,
         filename: Option<&String>,
+        start: usize,
+        end: usize,
     ) {
         let _ = f.write_all(&self.sqlize().into_bytes());
         let emptystring = "".to_string();
@@ -618,7 +611,12 @@ impl Table<NodeRefsTable> {
             Some(x) => x,
             None => &emptystring,
         };
+
         for (key, val) in &dz.noderefs {
+            // TODO: this could be handled better
+            if (*key >= start as u32 && *key < end as u32).not() {
+                continue;
+            }
             let row = NodeRefsRow {
                 node: &dz.nodelist[*key as usize - 1].to_string(),
                 filename,

@@ -12,16 +12,10 @@ use sqlite::*;
 
 mod tables;
 use tables::*;
-fn main() {
-    if env::args().len() < 2 {
-        println!("Please supply a dagzet file\n");
-        return;
-    }
 
-    let filename: &str = &env::args().last().unwrap();
+fn parse_file(filename: &str, dz: &mut DagZet) {
     let f = File::open(filename).unwrap();
     let reader = BufReader::new(f);
-    let mut dz = DagZet::new();
 
     let lines_iter = reader.lines().map(|l| l.unwrap());
 
@@ -39,6 +33,51 @@ fn main() {
         };
         linum += 1;
     }
+}
+
+struct FileMapper {
+    start: usize,
+    end: usize,
+}
+
+fn main() {
+    if env::args().len() < 2 {
+        println!("Please supply a dagzet file\n");
+        return;
+    }
+
+    let mut dz = DagZet::new();
+    let mut file_mappings: Vec<FileMapper> = vec![];
+
+    let mut start = 0;
+    let mut end;
+    for filename in env::args().skip(1) {
+        parse_file(&filename, &mut dz);
+        end = dz.nodelist.len();
+        file_mappings.push(FileMapper { start, end });
+        start = end;
+    }
+
+    // let filename: &str = &env::args().last().unwrap();
+    // let f = File::open(filename).unwrap();
+    // let reader = BufReader::new(f);
+
+    // let lines_iter = reader.lines().map(|l| l.unwrap());
+
+    // let mut linum = 1;
+
+    // for str in lines_iter {
+    //     dz.linum = linum;
+    //     let result = dz.parse_line_with_result(&str);
+
+    //     match result {
+    //         Ok(_) => {}
+    //         Err(rc) => {
+    //             panic!("Error on line {}: {}\nContext:'{}'", linum, rc, &str)
+    //         }
+    //     };
+    //     linum += 1;
+    // }
 
     let unknowns = dz.check_unknown_nodes();
     if !unknowns.is_empty() {
@@ -113,7 +152,16 @@ fn main() {
     audio.generate(&dz, &mut f);
 
     let noderefs: Table<NodeRefsTable> = Table::default();
-    noderefs.generate_with_filename(&dz, &mut f, Some(&filename.to_string()));
+    for (idx, filename) in env::args().skip(1).enumerate() {
+        let mapping = &file_mappings[idx];
+        noderefs.generate_with_filename(
+            &dz,
+            &mut f,
+            Some(&filename.to_string()),
+            mapping.start,
+            mapping.end,
+        );
+    }
 
     let _ = f.write_all(b"COMMIT;\n");
 }
