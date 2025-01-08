@@ -729,3 +729,13 @@ fn test_append_namespace() {
     let ns = dz.namespace.as_ref().unwrap();
     assert_eq!(ns, "a/b/c/d/e");
 }
+
+#[test]
+fn test_relative_namespace() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a/b");
+    dz.parse_line("nn c");
+    dz.parse_line("nn ../d");
+    let last_node = dz.nodelist.last().unwrap();
+    assert_eq!(last_node, "a/d");
+}

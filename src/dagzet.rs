@@ -230,9 +230,14 @@ impl DagZet {
                     None => return Err(ReturnCode::NameSpaceNotSet),
                 };
 
-                let mut nodename = String::from(ns);
-                nodename.push('/');
-                nodename.push_str(args);
+                let mut nodename;
+                if args.contains("..") {
+                    nodename = doubledot(ns, args)
+                } else {
+                    nodename = String::from(ns);
+                    nodename.push('/');
+                    nodename.push_str(args);
+                }
                 let nodes = &mut self.nodes;
 
                 if nodes.contains_key(&nodename) {
