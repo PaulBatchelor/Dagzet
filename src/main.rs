@@ -82,8 +82,8 @@ fn main() {
     let unknowns = dz.check_unknown_nodes();
     if !unknowns.is_empty() {
         panic!(
-            "There were some unknown nodes: {}",
-            unknowns.into_iter().collect::<Vec<_>>().join(", ")
+            "There were some unknown nodes:\n{}",
+            unknowns.into_iter().collect::<Vec<_>>().join("\n")
         );
     }
 
