@@ -109,6 +109,9 @@ pub struct DagZet {
 
     pub noderefs: HashMap<u32, u32>,
     pub linum: u32,
+
+    // attributes: Every node can have a hashmap with key/value pairs
+    pub attr: HashMap<u32, HashMap<String, Option<String>>>,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -602,6 +605,35 @@ impl DagZet {
                 };
 
                 self.audio.insert(curnode, args.to_string());
+            }
+
+            "at" => {
+                let curnode = match &self.curnode {
+                    Some(id) => *id,
+                    _ => return Err(ReturnCode::NodeNotSelected),
+                };
+
+                let args: Vec<_> = args.split_whitespace().collect();
+
+                if args.is_empty() {
+                    return Err(ReturnCode::NotEnoughArgs);
+                }
+
+                let key = args[0];
+
+                let value = if args.len() > 1 {
+                    Some(args[1].to_string())
+                } else {
+                    None
+                };
+
+                let attr = &mut self.attr;
+
+                // if !attr.contains_key(&curnode) {
+                //     attr.insert(curnode, HashMap::new());
+                // }
+                let node_attributes = attr.entry(curnode).or_default();
+                node_attributes.insert(key.to_string(), value);
             }
 
             _ => return Err(ReturnCode::InvalidCommand),

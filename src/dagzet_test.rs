@@ -739,3 +739,35 @@ fn test_relative_namespace() {
     let last_node = dz.nodelist.last().unwrap();
     assert_eq!(last_node, "a/d");
 }
+
+#[test]
+fn test_attributes() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a");
+    let res = dz.parse_line_with_result("at x y");
+    assert!(res.is_err());
+    assert!(matches!(res.err().unwrap(), ReturnCode::NodeNotSelected));
+    dz.parse_line("nn b");
+    let res = dz.parse_line_with_result("at x y");
+    assert!(res.is_ok());
+    let curnode = dz.curnode.unwrap();
+    let attr = &dz.attr;
+
+    assert!(attr.contains_key(&curnode));
+
+    let val = attr.get(&curnode);
+    assert!(val.is_some());
+
+    let val = val.unwrap();
+    assert!(val.contains_key("x"));
+    let val = val.get("x").unwrap().as_ref().unwrap();
+    assert_eq!(val, &"y");
+
+    dz.parse_line("at z");
+    let val = dz.attr.get(&curnode);
+    assert!(val.is_some());
+    let val = val.unwrap();
+    assert!(val.contains_key("z"));
+    let val = val.get("z").unwrap();
+    assert!(val.is_none());
+}
