@@ -163,5 +163,8 @@ fn main() {
         );
     }
 
+    let attributes: Table<AttributesTable> = Table::default();
+    attributes.generate(&dz, &mut f);
+
     let _ = f.write_all(b"COMMIT;\n");
 }

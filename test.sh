@@ -18,3 +18,4 @@ cargo run test.dz | sqlite3 a.db
 
 table_count dz_images 1
 table_count dz_audio 1
+table_count dz_attributes 2

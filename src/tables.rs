@@ -550,6 +550,7 @@ impl Default for Table<AudioTable> {
 impl Generate for Table<AudioTable> {
     fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
         let _ = f.write_all(&self.sqlize().into_bytes());
+        // TODO: replace images with audio table
         for (key, val) in &dz.images {
             let row = AudioRow {
                 node: &dz.nodelist[*key as usize - 1].to_string(),
@@ -624,6 +625,55 @@ impl Table<NodeRefsTable> {
             };
             let str = self.sqlize_insert(&row).to_string();
             let _ = f.write_all(&str.into_bytes());
+        }
+    }
+}
+
+pub struct AttributesTable;
+
+pub struct AttributesRow<'a> {
+    node: &'a String,
+    key: &'a String,
+    value: &'a Option<String>,
+}
+
+impl<AttributesTable> Row<AttributesTable> for AttributesRow<'_> {
+    fn sqlize_values(&self) -> String {
+        format!(
+            "{}, '{}', '{}'",
+            name_lookup(self.node),
+            self.key,
+            match self.value {
+                Some(x) => x,
+                None => "",
+            }
+        )
+    }
+}
+
+impl Default for Table<AttributesTable> {
+    fn default() -> Self {
+        let mut con: Table<AttributesTable> = Table::new("dz_attributes");
+        con.add_column(&Param::new("node", ParamType::Integer));
+        con.add_column(&Param::new("key", ParamType::Text));
+        con.add_column(&Param::new("value", ParamType::Text));
+        con
+    }
+}
+
+impl Generate for Table<AttributesTable> {
+    fn generate(&self, dz: &DagZet, f: &mut impl io::Write) {
+        let _ = f.write_all(&self.sqlize().into_bytes());
+        for (node_id, attributes) in &dz.attr {
+            for (key, value) in attributes {
+                let row = AttributesRow {
+                    node: &dz.nodelist[*node_id as usize - 1].to_string(),
+                    key,
+                    value,
+                };
+                let str = self.sqlize_insert(&row).to_string();
+                let _ = f.write_all(&str.into_bytes());
+            }
         }
     }
 }

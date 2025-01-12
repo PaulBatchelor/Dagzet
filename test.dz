@@ -53,3 +53,7 @@ ns a
 nn image
 ln a node with an image
 im an_image.jpg
+
+nn node_with_attributes
+at x y
+at z
