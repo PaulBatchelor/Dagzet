@@ -201,7 +201,7 @@ impl DagZet {
 
         match cmd {
             "ns" => {
-                let mut new_namespace = args.to_string();
+                let mut new_namespace = args.trim().to_string();
                 if new_namespace.contains("..") {
                     let old_namespace = self.namespace.as_ref().unwrap();
                     new_namespace = doubledot(old_namespace, &new_namespace);
@@ -239,7 +239,7 @@ impl DagZet {
                 } else {
                     nodename = String::from(ns);
                     nodename.push('/');
-                    nodename.push_str(args);
+                    nodename.push_str(args.trim());
                 }
                 let nodes = &mut self.nodes;
 

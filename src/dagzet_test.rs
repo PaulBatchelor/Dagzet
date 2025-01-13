@@ -771,3 +771,17 @@ fn test_attributes() {
     let val = val.get("z").unwrap();
     assert!(val.is_none());
 }
+
+#[test]
+fn test_space_stripping() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a ");
+    dz.parse_line("nn b");
+    let curnode = dz.curnode.unwrap();
+
+    assert_eq!(&dz.nodelist[(curnode - 1) as usize], "a/b");
+
+    dz.parse_line("nn c ");
+    let curnode = dz.curnode.unwrap();
+    assert_eq!(&dz.nodelist[(curnode - 1) as usize], "a/c");
+}
