@@ -612,7 +612,6 @@ impl Table<NodeRefsTable> {
             Some(x) => x,
             None => &emptystring,
         };
-
         for (key, val) in &dz.noderefs {
             // TODO: this could be handled better
             if (*key >= start as u32 && *key < end as u32).not() {

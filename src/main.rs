@@ -158,8 +158,8 @@ fn main() {
             &dz,
             &mut f,
             Some(&filename.to_string()),
-            mapping.start,
-            mapping.end,
+            mapping.start + 1,
+            mapping.end + 1,
         );
     }
 
