@@ -13,6 +13,8 @@ use sqlite::*;
 mod tables;
 use tables::*;
 
+mod trie;
+
 fn parse_file(filename: &str, dz: &mut DagZet) {
     let f = File::open(filename).unwrap();
     let reader = BufReader::new(f);
