@@ -3,6 +3,8 @@ use std::collections::hash_map;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use crate::trie::Trie;
+
 pub enum ReturnCode {
     Okay,
     Error,
@@ -112,6 +114,9 @@ pub struct DagZet {
 
     // attributes: Every node can have a hashmap with key/value pairs
     pub attr: HashMap<u32, HashMap<String, Option<String>>>,
+
+    // suffix tree
+    suffix_tree: Trie,
 }
 
 fn does_loop_exist(edges: &Vec<[u32; 2]>, a: u32, b: u32) -> bool {
@@ -249,6 +254,8 @@ impl DagZet {
 
                 let node_id = nodes.len() as u32 + 1;
 
+                // add to suffix tree
+                self.suffix_tree.add_path(&nodename);
                 self.nodelist.push(nodename.clone());
                 nodes.insert(nodename, node_id);
 
@@ -287,11 +294,15 @@ impl DagZet {
                 let use_left_shorthand = connect_args[0] == "$";
                 let use_right_shorthand = connect_args[1] == "$";
 
+                let use_suffix_left = connect_args[0].starts_with('?');
+                let use_suffix_right = connect_args[1].starts_with('?');
+
                 let use_left_doubledot = connect_args[0].contains("..");
                 let use_right_doubledot = connect_args[1].contains("..");
 
                 let shorthand_used = use_left_shorthand || use_right_shorthand;
                 let doubledot_used = use_left_doubledot || use_right_doubledot;
+                let suffix_used = use_suffix_left || use_suffix_right;
 
                 let curnode = if shorthand_used || doubledot_used {
                     match self.curnode {
@@ -317,10 +328,21 @@ impl DagZet {
                     }
                 };
 
-                let left = process_arg(connect_args[0], use_left_shorthand, use_left_doubledot);
-                let right = process_arg(connect_args[1], use_right_shorthand, use_right_doubledot);
+                let left = if use_suffix_left {
+                    connect_args[0].to_string()
+                } else {
+                    process_arg(connect_args[0], use_left_shorthand, use_left_doubledot)
+                };
 
-                if self.already_connected(&left, &right) {
+                let right = if use_suffix_right {
+                    connect_args[1].to_string()
+                } else {
+                    process_arg(connect_args[1], use_right_shorthand, use_right_doubledot)
+                };
+
+                // skip the duplicate connections check if suffix syntax (?suffix)
+                // is used. these will need to be checked after they are resolved
+                if !suffix_used && self.already_connected(&left, &right) {
                     return Err(ReturnCode::AlreadyConnected);
                 }
 
@@ -757,6 +779,67 @@ impl DagZet {
         }
 
         Ok(ReturnCode::Okay)
+    }
+
+    #[allow(dead_code)]
+    fn resolve_connections(&mut self) {
+        // dynamically populate an adjacency list
+        // TODO: move this into dagzet struct, this could be used
+        // with already_connected() method
+        let mut adj: HashMap<String, HashSet<String>> = HashMap::new();
+
+        let connections = &mut self.connections;
+
+        let generate = |suffix: bool, con: &str| -> String {
+            if suffix {
+                let res = self.suffix_tree.search(&con[1..]);
+                if res.is_err() {
+                    todo!("better error handling");
+                }
+                match res {
+                    Ok(s) => s,
+                    _ => todo!("better error handling"),
+                }
+            } else {
+                con.to_string()
+            }
+        };
+
+        for co in connections {
+            let left_suffix = co[0].starts_with('?');
+            let right_suffix = co[1].starts_with('?');
+
+            if !(left_suffix || right_suffix) {
+                if !adj.contains_key(&co[0]) {
+                    adj.insert(co[0].to_string(), HashSet::new());
+                }
+                let left = adj.get_mut(&co[0]).unwrap();
+                left.insert(co[1].to_string());
+                continue;
+            }
+
+            let left = generate(left_suffix, &co[0]);
+            let right = generate(right_suffix, &co[1]);
+
+            if adj.contains_key(&left) {
+                let lefty = adj.get(&left).unwrap();
+
+                if lefty.contains(&right) {
+                    todo!("better error handling for duplicate node");
+                }
+            }
+
+            {
+                if !adj.contains_key(&left) {
+                    adj.insert(left.to_string(), HashSet::new());
+                }
+                let lefty = adj.get_mut(&left).unwrap();
+                lefty.insert(right.to_string());
+            }
+
+            co[0] = left;
+            co[1] = right;
+        }
     }
 }
 

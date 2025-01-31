@@ -35,7 +35,6 @@ impl Trie {
         // search in reversed order for suffix search
 
         for word in suffix.split('/').rev() {
-            dbg!(&word);
             match node.children.get(word) {
                 Some(n) => {
                     node = n;

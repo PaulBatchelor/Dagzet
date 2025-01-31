@@ -785,3 +785,42 @@ fn test_space_stripping() {
     let curnode = dz.curnode.unwrap();
     assert_eq!(&dz.nodelist[(curnode - 1) as usize], "a/c");
 }
+
+#[test]
+fn test_suffix_basic() {
+    let mut dz = DagZet::new();
+    dz.parse_line("ns a");
+    dz.parse_line("nn b/c/d/e");
+    dz.parse_line("nn f");
+    dz.parse_line("co $ ?d/e");
+    dz.parse_line("nn x/y/z");
+    dz.parse_line("co ?d/e $");
+
+    dz.resolve_connections();
+
+    let co = &dz.connections[0];
+
+    assert_eq!(&co[0], "a/f");
+    assert_eq!(&co[1], "a/b/c/d/e");
+
+    let co = &dz.connections[1];
+
+    assert_eq!(&co[0], "a/b/c/d/e");
+    assert_eq!(&co[1], "a/x/y/z");
+}
+
+#[test]
+#[should_panic]
+fn test_suffix_duplicates() {
+    let mut dz = DagZet::new();
+
+    dz.parse_line("ns a");
+    dz.parse_line("nn b/c/d/e");
+    dz.parse_line("nn f");
+    dz.parse_line("co $ ?d/e");
+    dz.parse_line("co $ ?c/d/e");
+
+    dz.resolve_connections();
+
+    dbg!(&dz.connections);
+}
