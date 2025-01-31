@@ -782,7 +782,7 @@ impl DagZet {
     }
 
     #[allow(dead_code)]
-    fn resolve_connections(&mut self) {
+    pub fn resolve_connections(&mut self) {
         // dynamically populate an adjacency list
         // TODO: move this into dagzet struct, this could be used
         // with already_connected() method
@@ -793,12 +793,9 @@ impl DagZet {
         let generate = |suffix: bool, con: &str| -> String {
             if suffix {
                 let res = self.suffix_tree.search(&con[1..]);
-                if res.is_err() {
-                    todo!("better error handling");
-                }
                 match res {
                     Ok(s) => s,
-                    _ => todo!("better error handling"),
+                    _ => panic!("suffix error: {con}"),
                 }
             } else {
                 con.to_string()

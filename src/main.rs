@@ -81,6 +81,7 @@ fn main() {
     //     linum += 1;
     // }
 
+    dz.resolve_connections();
     let unknowns = dz.check_unknown_nodes();
     if !unknowns.is_empty() {
         panic!(
