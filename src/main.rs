@@ -37,15 +37,37 @@ fn parse_file(filename: &str, dz: &mut DagZet) {
     }
 }
 
+fn parse_stdin(dz: &mut DagZet) {
+    let reader = BufReader::new(io::stdin());
+
+    let lines_iter = reader.lines().map(|l| l.unwrap());
+
+    let mut linum = 1;
+
+    for str in lines_iter {
+        dz.linum = linum;
+        let result = dz.parse_line_with_result(&str);
+
+        match result {
+            Ok(_) => {}
+            Err(rc) => {
+                panic!("Error on line {}: {}\nContext:'{}'", linum, rc, &str)
+            }
+        };
+        linum += 1;
+    }
+}
+
 struct FileMapper {
     start: usize,
     end: usize,
 }
 
 fn main() {
+    let mut stdin = false;
+
     if env::args().len() < 2 {
-        println!("Please supply a dagzet file\n");
-        return;
+        stdin = true;
     }
 
     let mut dz = DagZet::new();
@@ -53,33 +75,20 @@ fn main() {
 
     let mut start = 0;
     let mut end;
-    for filename in env::args().skip(1) {
-        parse_file(&filename, &mut dz);
+    let filenames = env::args().skip(1);
+
+    if stdin {
+        parse_stdin(&mut dz);
         end = dz.nodelist.len();
         file_mappings.push(FileMapper { start, end });
-        start = end;
+    } else {
+        for filename in env::args().skip(1) {
+            parse_file(&filename, &mut dz);
+            end = dz.nodelist.len();
+            file_mappings.push(FileMapper { start, end });
+            start = end;
+        }
     }
-
-    // let filename: &str = &env::args().last().unwrap();
-    // let f = File::open(filename).unwrap();
-    // let reader = BufReader::new(f);
-
-    // let lines_iter = reader.lines().map(|l| l.unwrap());
-
-    // let mut linum = 1;
-
-    // for str in lines_iter {
-    //     dz.linum = linum;
-    //     let result = dz.parse_line_with_result(&str);
-
-    //     match result {
-    //         Ok(_) => {}
-    //         Err(rc) => {
-    //             panic!("Error on line {}: {}\nContext:'{}'", linum, rc, &str)
-    //         }
-    //     };
-    //     linum += 1;
-    // }
 
     dz.resolve_connections();
     let unknowns = dz.check_unknown_nodes();
@@ -155,7 +164,7 @@ fn main() {
     audio.generate(&dz, &mut f);
 
     let noderefs: Table<NodeRefsTable> = Table::default();
-    for (idx, filename) in env::args().skip(1).enumerate() {
+    for (idx, filename) in filenames.enumerate() {
         let mapping = &file_mappings[idx];
         noderefs.generate_with_filename(
             &dz,
