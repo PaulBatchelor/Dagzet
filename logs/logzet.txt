@@ -1,0 +1,95 @@
+@2025-08-17#logzet
+@14:33 Re-aquainting myself with this repo, hello logzet #logzet #timelog:00:05:25
+I have this logging format that I have been using
+for the past year or so. It's sort of adhoc, but
+I have a few parsers for it. I'm hoping to make
+a more established parser for it here. Similar
+to dagzet, it'll parse files and return SQLite
+code to produce relational databases.
+---
+I'm hoping to begin by adding a new aux binary
+called logzet. I'd like to install it by default
+with dagzet.
+---
+Well, that was pretty painless. Now for the harder
+part, setting up the parser.
+
+@14:42 Planning out the parser #timelog:00:17:31
+For the most part, parsing is done line-by-line.
+---
+The start of the line determines what the line is
+going to be.
+---
+An '@' at the start of the line
+signifies the start of a block. What follows the @ determines
+what kind of block it will be. For now, there are really two
+types of blocks: blocks that indicate a date, and ones that
+indicate a time.
+---
+Date Blocks: The format is YYYY-MM-DD?(#(TEXT)) (like my pseudo-regex?).
+In the program, this thing sets the current day of the program.
+The hashtag adds a tag for the day.
+---
+Time blocks: HH:MM (TITLE). This creates a log entry at a particular
+time. A day block should be made before adding time. Everything following
+the the timestamp (plus whitespace) is the title.
+---
+Titles in the time blocks can have hashtags. These do not get included in the
+the actual title name, and should be automatically removed.
+
+
+@15:20 continued parsing plans (describing the parser) #timelog:00:14:54
+Lines that start with "#!" are logzet commands. Typically,
+these come right after the line that starts a block,
+but I don't think that needs to be the case.
+---
+The only command that is used currently is "dz", which
+links the current log entry to a particular dagzet node.
+---
+A line that starts with '---', and nothing else, is considered
+a break. Typically, I use these to break things into
+paragraphs.
+---
+A line that starts with "===" begins a pre-formatted block, usually
+used for code blocks. It preserve all line breaks and spaces until
+it finds another lines starting with "===".
+---
+I think that's most of it?
+---
+OH! right. Empty lines are ignored.
+
+@15:46 attack plan #timelog:00:31:06
+I'm thinking I may have this be a two-pass parsing process.
+The first pass tokenizes things by line, the second pass
+parses these tokens to build up a more meaningful representation
+of the data.
+---
+Tokenization is pretty straight forward. Use an enum.
+Parse text line by line.
+---
+Plain text content in a block (anything that isn't a block
+or metablock), can be stored line by line and merged later.
+pre-formatted block starts change the behavior of the line
+parser. Once a block starts, every line parsed after that
+points becomes a preformatted line until it finds another
+corresponding "===", which turns it off.
+---
+For logs, log entries are grouped by dates, and dates
+can be grouped by category.
+---
+Claude has come up with suggestions for what to call
+these things: A "Session" describes a combination of
+a "Date" and an optional "Context". A Session contains
+a group of log entries associated with that context.
+---
+Since dagzet support is also going to be wanted here,
+there should be something that shows a list of
+related nodes (represented as paths).
+---
+An Entry consists of a list of content chunks. Maybe
+these are just called "blocks" (claude suggests this).
+I want this log format to also be generalized in
+terms of blocks, but that may be overgeneralizing.
+
+@16:26 working out the initial data structures
+I'm just gonna put them in one file.
