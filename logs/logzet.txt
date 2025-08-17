@@ -91,5 +91,12 @@ these are just called "blocks" (claude suggests this).
 I want this log format to also be generalized in
 terms of blocks, but that may be overgeneralizing.
 
-@16:26 working out the initial data structures
-I'm just gonna put them in one file.
+@16:26 working out the initial data structures #timelog:00:47:38
+I'm just gonna put them in the one file.
+---
+I'm thinking about source maps. I think the best way to
+express this is as a generic struct that wraps
+an inner type.
+---
+Got some initial structs down. Now, I want to create
+some From traits for the lower-level statements.
