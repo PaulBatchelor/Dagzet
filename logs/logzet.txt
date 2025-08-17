@@ -100,3 +100,24 @@ an inner type.
 ---
 Got some initial structs down. Now, I want to create
 some From traits for the lower-level statements.
+
+@17:45 some initial From traits #timelog:00:11:12
+
+@19:22 initial boilerplate: got "break" parsed #timelog:00:20:25
+
+@19:43 attempting regex matching for Time #timelog:00:20:16
+Ran out of time. Gotta get home.
+
+@2025-08-18#logzet another hub session
+
+@19:31 resuming where I left off, matches for Time #timelog:00:49:57
+I got the basic regex working! now I need to add in
+hashtags.
+
+@20:21 Now a similar thing for Date #timelog:00:59:41
+This will have a title. Might as well have hashtags?
+This could be a generic.
+---
+Got the "context" hashtag working. Now getting the regular tags working?
+---
+Working!
