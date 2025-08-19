@@ -125,3 +125,22 @@ Working!
 @21:22 interlude... fix cargo clippy warnings #timelog:00:01:45
 
 @21:25 get commands working #timelog:00:11:21
+
+@22:07 next steps #timelog:00:10:12
+There needs to be something that takes a list of
+strings, and turns it into a corresponding vector
+of Statements. This should be able to handle
+comments as well as blocks.
+---
+A vector of statements, should also be able to be parsed
+and turned into a set of sesssions.
+---
+Entries and sessions should be sorted. Use a BTreeSet?
+Or possibly, it might be just good enough to use parsing
+order?
+---
+Figure out best way to convert data into SQLite tables.
+Figure out table schema, then make a bunch of insert
+statements.
+---
+Dagzet commands. Get that behavior in.
