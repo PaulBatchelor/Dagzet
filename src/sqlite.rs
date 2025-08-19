@@ -105,7 +105,7 @@ impl<T> Table<T> {
     }
 }
 
-pub fn escape_quotes(str: &String) -> String {
+pub fn escape_quotes(str: &str) -> String {
     let mut escaped = String::new();
 
     for s in str.chars() {

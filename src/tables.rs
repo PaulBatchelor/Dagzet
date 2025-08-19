@@ -336,7 +336,7 @@ impl<HyperlinksTable> Row<HyperlinksTable> for HyperlinksRow<'_> {
         format!(
             "{}, '{}'",
             name_lookup(self.node),
-            escape_quotes(&self.hyperlink)
+            escape_quotes(self.hyperlink)
         )
     }
 }
@@ -437,7 +437,7 @@ impl Generate for Table<TagsTable> {
             for tag in tags {
                 let row = TagsRow {
                     node: &dz.nodelist[*nodeid as usize - 1],
-                    tag: &tag,
+                    tag,
                 };
                 let str = self.sqlize_insert(&row).to_string();
                 let _ = f.write_all(&str.into_bytes());

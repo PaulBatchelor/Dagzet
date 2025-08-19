@@ -121,3 +121,7 @@ This could be a generic.
 Got the "context" hashtag working. Now getting the regular tags working?
 ---
 Working!
+
+@21:22 interlude... fix cargo clippy warnings #timelog:00:01:45
+
+@21:25 get commands working #timelog:00:11:21

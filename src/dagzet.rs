@@ -534,7 +534,7 @@ impl DagZet {
 
                 // shorthand: substitute with previous connection
                 if left == "^" || right == "^" {
-                    if self.connections.len() == 0 {
+                    if self.connections.is_empty() {
                         return Err(ReturnCode::NoConnections);
                     }
                     let cid: usize = self.connections.len() - 1;

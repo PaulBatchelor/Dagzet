@@ -155,6 +155,15 @@ impl TryFrom<String> for Statement {
             }
         }
 
+        if value.starts_with("#!") {
+            let args: Vec<_> = value
+                .split_whitespace()
+                .skip(1)
+                .map(|s| s.to_string())
+                .collect();
+            return Ok(Statement::Command(Command { args }));
+        }
+
         Err(StatementError::ParseError)
     }
 }
@@ -351,6 +360,23 @@ mod tests {
             if let Some(context) = &date.context {
                 assert_eq!(context, "abcde");
             }
+        }
+    }
+
+    #[test]
+    fn test_statement_tryfrom_command() {
+        let cmdstr = "#! dz foo/bar";
+        let cmd: Option<Statement> = cmdstr.to_string().try_into().ok();
+        assert!(cmd.is_some(), "Could not parse");
+        let cmd = cmd.unwrap();
+        assert!(
+            matches!(&cmd, Statement::Command(_)),
+            "Did not parse correctly"
+        );
+
+        if let Statement::Command(cmd) = cmd {
+            let expected_args: Vec<_> = ["dz", "foo/bar"].into_iter().map(String::from).collect();
+            assert_eq!(&cmd.args, &expected_args);
         }
     }
 }
