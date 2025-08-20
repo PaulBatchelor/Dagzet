@@ -144,3 +144,33 @@ Figure out table schema, then make a bunch of insert
 statements.
 ---
 Dagzet commands. Get that behavior in.
+
+@2025-08-19#logzet working at home, PLG, Brooklyn
+@20:31 Let's see if I can plan out how Statements turn into Sessions #timelog:00:25:40
+I've built myself function. Vector of Statements go in,
+Vector of Sessions comes out.
+---
+I want the output list to be in chronological order.
+I'm thinking order could be preservered internally with either
+a BTreeMap or a BTreeSet, then converted to a Vec at the last minute.
+---
+The logic would work by keeping track of the last Date (year, month, day, context).
+I believe that by default, the BTree will sort things in order that they appear
+in the struct. subsequent statements, would then get processed and inserted into
+that active slot.
+---
+Time entries, like Date entries, should be in sorted order as well. Having a BTree
+would be nice, but the struct at the end should simplified to be a Vec somehow.
+So, I guess there are some intermediates.
+---
+Two nested BTreeMaps. The Outer Map is for Dates, and each entry in that map
+points to an Inner BTreeMap for Time Entries.
+---
+Date/Time structs need to be split up more because they have
+junk in it like titles and tags. Maybe TimeKey and DateKey.
+---
+Build BTreeMap types for Session and Entry called SessionMap
+and EntryMap. EntryMap is an alias for BTreeMap<TimeKey,Block>.
+SessionMap is an alias for BTreeMap<DateKey,EntryMap>. Once it
+is all populated, they can get converted to regular list of Sessions
+which contain a regular list of entries.

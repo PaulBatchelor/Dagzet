@@ -202,6 +202,12 @@ struct Session {
     entries: Vec<Entry>,
 }
 
+#[allow(dead_code)]
+// TODO: error handling, plz read that rust for rustaceans chapter
+fn build_sessions(_stmts: Vec<Statement>) -> Vec<Session> {
+    todo!()
+}
+
 fn main() {
     println!("hello logzet");
 }
