@@ -271,3 +271,44 @@ joining a vector of strings together.
 
 @18:01 back to getting the grouping right #timelog:00:07:01
 The line breaks work, I just didn't factor in the grouping.
+
+@18:12 looking into dagzet logic #timelog:00:37:28
+I think the way I did this before was a bit of a hack.
+I believe what it did was was make the node a hashtag
+with the prefix "dz:". I'd then have code that was able
+to search for these nodes associated with messages
+and stitch them up.
+---
+What I want is a more dedicated structure for the job.
+Something that actually shows the relationship between
+items.
+---
+Previously, I was only attaching nodes to entries. I'd
+like to extend that to be with blocks inside an entry
+as well. A more sophisticated command language would
+be nice too, but I can think on that one later. Just
+full paths and '$' should be good enough.
+---
+I could probably make an ID system work. The id would
+map to a list of node paths. Somehow, this could be something
+that could be query-able in a SQL join operation.
+---
+A potential structure could be an entity list. Anything
+that gets made gets added to this list.
+---
+Any time you'd call the dagzet command, you'd be appending
+it to the last entity item on the list.
+---
+This could be a helpful item in general for things like
+source maps, so, I'm included to see how feasible it
+would be to construct such a thing.
+
+@18:59 entity list investigations, might need to go full ECS. Is this ECS? #timelog:00:23:48
+For starters, get the old way working, which is
+the ability to link to the entry. Build an entity
+component list but only add entries.
+---
+Okay. So this might be a non-trivial refactor. I think
+I need to reverse the thining. The entity list owns all
+the components, and the struct just references it. This
+is how an entity component system would work.
