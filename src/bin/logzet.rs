@@ -221,11 +221,23 @@ fn blocks_to_string(value: Vec<Block>) -> String {
     string_blocks.join("\n---\n")
 }
 
+enum BlockData {
+    Text(Vec<String>),
+}
+
+impl From<BlockData> for Block {
+    fn from(value: BlockData) -> Block {
+        match value {
+            BlockData::Text(lines) => Block::Text(lines.join(" ")),
+        }
+    }
+}
+
 #[allow(dead_code)]
 struct EntryData {
     title: String,
     tags: Vec<String>,
-    blocks: Vec<Block>,
+    blocks: Vec<BlockData>,
 }
 
 /// An intermediate structure used for sorting time entries for a day
@@ -261,17 +273,108 @@ struct Session {
 // TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
     let mut session_map = SessionMap::new();
+    let mut current_session: Option<DateKey> = None;
+    let mut current_entry: Option<TimeKey> = None;
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {
+            // TODO: avoid clobbering
             session_map.insert(
-                date.key,
+                date.key.clone(),
                 SessionData {
                     title: date.title,
                     tags: date.tags,
                     entries: EntryMap::new(),
                 },
             );
+            current_session = Some(date.key.clone());
+            continue;
+        }
+
+        if let Statement::Time(time) = stmt {
+            if let Some(session_key) = &current_session {
+                if let Some(session) = session_map.get_mut(session_key) {
+                    session.entries.insert(
+                        time.key.clone(),
+                        EntryData {
+                            title: time.title,
+                            tags: time.tags,
+                            blocks: vec![],
+                        },
+                    );
+                    current_entry = Some(time.key);
+                }
+            } else {
+                // TODO: error handling
+                panic!("No active session found");
+            }
+            continue;
+        }
+
+        if let Statement::TextLine(text) = stmt {
+            let session_key = match &current_session {
+                Some(key) => key,
+                // TODO: error handling
+                _ => panic!("No active session found"),
+            };
+
+            let entry_key = match &current_entry {
+                Some(key) => key,
+                // TODO: error handling
+                _ => panic!("No active entry found"),
+            };
+
+            let session = match session_map.get_mut(session_key) {
+                Some(data) => data,
+                // TODO: error handling
+                _ => panic!("session not found"),
+            };
+
+            let entry = match session.entries.get_mut(entry_key) {
+                Some(data) => data,
+                // TODO: error handling
+                _ => panic!("entry not found"),
+            };
+
+            if entry.blocks.is_empty() {
+                entry.blocks.push(BlockData::Text(vec![text.text]));
+            } else if let Some(last) = entry.blocks.last_mut() {
+                match last {
+                    BlockData::Text(lines) => lines.push(text.text),
+                };
+            }
+            continue;
+        }
+
+        if matches!(stmt, Statement::Break) {
+            // TODO: deduplicate session/entry getter logic
+            let session_key = match &current_session {
+                Some(key) => key,
+                // TODO: error handling
+                _ => panic!("No active session found"),
+            };
+
+            let entry_key = match &current_entry {
+                Some(key) => key,
+                // TODO: error handling
+                _ => panic!("No active entry found"),
+            };
+
+            let session = match session_map.get_mut(session_key) {
+                Some(data) => data,
+                // TODO: error handling
+                _ => panic!("session not found"),
+            };
+
+            let entry = match session.entries.get_mut(entry_key) {
+                Some(data) => data,
+                // TODO: error handling
+                _ => panic!("entry not found"),
+            };
+
+            entry.blocks.push(BlockData::Text(Vec::new()));
+
+            continue;
         }
     }
 
@@ -294,7 +397,7 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                         title: edata.title,
                         tags: edata.tags,
                     },
-                    blocks: edata.blocks,
+                    blocks: edata.blocks.into_iter().map(|b| b.into()).collect(),
                 })
                 .collect(),
         })
@@ -690,5 +793,77 @@ mod tests {
             session_rows.logs.iter().map(|e| e.into()).collect();
 
         assert_eq!(&generated_entries, &entry_data);
+    }
+
+    // Make sure statement parsing logic is grouping and chunking things correctly
+    #[test]
+    fn test_entry_groupings() {
+        let dt = Statement::Date;
+        let tm = Statement::Time;
+        let tl = Statement::TextLine;
+        let br = Statement::Break;
+        let time1 = TimeKey {
+            hour: 14,
+            minute: 1,
+        };
+        let time2 = TimeKey {
+            hour: 15,
+            minute: 30,
+        };
+        let document: Vec<Statement> = vec![
+            dt(Date::default()),
+            tm(Time {
+                key: time1.clone(),
+                title: "First task of the day".to_string(),
+                tags: vec!["timelog:00:15:00".to_string()],
+            }),
+            tl(TextLine {
+                text: "I am writing some words".to_string(),
+            }),
+            tl(TextLine {
+                text: "and I am doing my task".to_string(),
+            }),
+            tm(Time {
+                key: time2.clone(),
+                title: "Brainstorming".to_string(),
+                tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+            }),
+            tl(TextLine {
+                text: "this is a thought I had".to_string(),
+            }),
+            br.clone(),
+            tl(TextLine {
+                text: "this is a another thought I had".to_string(),
+            }),
+            br.clone(),
+            tl(TextLine {
+                text: "one more thought".to_string(),
+            }),
+        ];
+        let sessions = build_sessions(document.clone());
+
+        // Only one document expected
+        assert_eq!(sessions.len(), 1);
+
+        // extract that document
+        let session = &sessions[0];
+        assert_eq!(session.entries.len(), 2);
+
+        // Make sure the entries are being grouped as expected
+        // Also make sure blocks are being chunked properly
+        let entries = &session.entries;
+
+        assert_eq!(&entries[0].time.key, &time1);
+        assert_eq!(entries[0].blocks.len(), 1);
+        let block_text = match &entries[0].blocks[0] {
+            Block::Text(text) => text,
+            _ => panic!("Expected block text"),
+        };
+
+        // Make sure line breaking logic is being handled correctly"
+        assert_eq!(block_text, "I am writing some words and I am doing my task");
+
+        assert_eq!(&entries[1].time.key, &time2);
+        assert_eq!(entries[1].blocks.len(), 3);
     }
 }

@@ -238,3 +238,36 @@ in my ad-hoc implementation. So, this'll mean breaking compatibility
 eventually.
 ---
 Tests seem to pass. Does that mean it works?
+
+@13:41 more parser work for converting Statements into Sessions: grouping #timelog:01:03:23
+Right, I'm going to work on getting the core logging components
+figured out. That's going to be a date header, setting times,
+and appending blocks to those times.
+---
+Going to make it really brittle right now. Overwriting
+dates/times will be possible. I will harden later.
+What I want to do is make sure the most bare minimum input
+yields the correct output. At that point, the implementation
+can start being more end to end.
+---
+dagzet commands will follow up shortly. I think I am going
+to break backwards compatibility for this. I really
+want more granular support for multiple blocks, and I want
+to make it possible to link nodes to particular blocks
+instead of just timestamps.
+---
+At this point, I'm going to assume the parsing is working
+correctly? I think the observed behavior for this test
+is that grouping is happening as expected for entries.
+---
+I didn't think about the line breaking logic. Line breaks
+are treated as spaces. Empty lines are ignored.
+---
+Goodness time got away from me.
+
+@15:04 I need to work out line breaking logic for this parser #timelog:00:33:40
+Working backwards, I'm hoping this can be as simple as as
+joining a vector of strings together.
+
+@18:01 back to getting the grouping right #timelog:00:07:01
+The line breaks work, I just didn't factor in the grouping.
