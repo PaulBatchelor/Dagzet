@@ -179,3 +179,5 @@ which contain a regular list of entries.
 I also got the initial BTreeMaps set up as well. It
 could be refactored further I think, but this is
 good enough.
+
+@22:30 First parse test: can days out of order be put in order? #timelog:00:39:25

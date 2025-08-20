@@ -2,7 +2,7 @@ use regex::Regex;
 use std::collections::BTreeMap;
 
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Default, Clone, Debug, PartialEq, Ord, Eq, PartialOrd)]
 struct DateKey {
     month: u8,
     day: u8,
@@ -11,7 +11,7 @@ struct DateKey {
 }
 
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Default, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 struct TimeKey {
     hour: u8,
     minute: u8,
@@ -19,7 +19,7 @@ struct TimeKey {
 
 /// Simple representation of a date
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Date {
     key: DateKey,
     title: String,
@@ -28,7 +28,7 @@ struct Date {
 
 /// Simple representation of a time
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Time {
     key: TimeKey,
     title: String,
@@ -37,18 +37,21 @@ struct Time {
 
 /// A single line of text
 #[allow(dead_code)]
+#[derive(Clone)]
 struct TextLine {
     text: String,
 }
 
 /// A command
 #[allow(dead_code)]
+#[derive(Clone)]
 struct Command {
     args: Vec<String>,
 }
 
 /// A granular unit of information, typically represented as a line of text
 #[allow(dead_code)]
+#[derive(Clone)]
 enum Statement {
     Date(Date),
     Time(Time),
@@ -234,14 +237,51 @@ struct Entry {
 #[allow(dead_code)]
 struct Session {
     date: Date,
-    context: Option<String>,
     entries: Vec<Entry>,
 }
 
 #[allow(dead_code)]
 // TODO: error handling, plz read that rust for rustaceans chapter
-fn build_sessions(_stmts: Vec<Statement>) -> Vec<Session> {
-    todo!()
+fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
+    let mut session_map = SessionMap::new();
+
+    for stmt in stmts {
+        if let Statement::Date(date) = stmt {
+            session_map.insert(
+                date.key,
+                SessionData {
+                    title: date.title,
+                    tags: date.tags,
+                    entries: EntryMap::new(),
+                },
+            );
+        }
+    }
+
+    // TODO: From traits
+    session_map
+        .into_iter()
+        .map(|(date, data)| Session {
+            date: Date {
+                key: date,
+                title: data.title,
+                tags: data.tags,
+            },
+            // TODO: From traits
+            entries: data
+                .entries
+                .into_iter()
+                .map(|(time, edata)| Entry {
+                    time: Time {
+                        key: time,
+                        title: edata.title,
+                        tags: edata.tags,
+                    },
+                    blocks: edata.blocks,
+                })
+                .collect(),
+        })
+        .collect()
 }
 
 fn main() {
@@ -425,5 +465,64 @@ mod tests {
             let expected_args: Vec<_> = ["dz", "foo/bar"].into_iter().map(String::from).collect();
             assert_eq!(&cmd.args, &expected_args);
         }
+    }
+
+    #[test]
+    fn test_date_ordering() {
+        let stmts: Vec<Statement> = vec![
+            Statement::Date(Date {
+                key: DateKey {
+                    year: 2025,
+                    month: 8,
+                    day: 19,
+                    context: None,
+                },
+                tags: vec![],
+                title: "".to_string(),
+            }),
+            Statement::Date(Date {
+                key: DateKey {
+                    year: 2024,
+                    month: 5,
+                    day: 20,
+                    context: None,
+                },
+                tags: vec![],
+                title: "".to_string(),
+            }),
+            Statement::Date(Date {
+                key: DateKey {
+                    year: 2025,
+                    month: 8,
+                    day: 18,
+                    context: None,
+                },
+                tags: vec![],
+                title: "".to_string(),
+            }),
+        ];
+        let output = build_sessions(stmts.clone());
+
+        // sanity check
+        assert_eq!(stmts.len(), output.len());
+
+        // extract date structs from statments
+        let dates: Vec<_> = stmts
+            .into_iter()
+            .filter_map(|s| match s {
+                Statement::Date(d) => Some(d),
+                _ => None,
+            })
+            .collect();
+
+        let expected_order: Vec<DateKey> = [1, 2, 0]
+            .into_iter()
+            .map(|i| dates[i].key.clone())
+            .collect();
+
+        let generated_order: Vec<DateKey> =
+            output.into_iter().map(|s| s.date.key.clone()).collect();
+
+        assert_eq!(expected_order, generated_order);
     }
 }
