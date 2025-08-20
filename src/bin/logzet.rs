@@ -201,9 +201,24 @@ struct Location<T> {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 enum Block {
     Text(String),
     PreText(String),
+}
+
+fn blocks_to_string(value: Vec<Block>) -> String {
+    // TODO: handle pretext blocks
+    let string_blocks: Vec<_> = value
+        .into_iter()
+        .map(|b| match b {
+            Block::Text(s) => s,
+            _ => unimplemented!("PreText blocks not yet implemented"),
+        })
+        .collect();
+    // NOTE: it would be better if the data model could actually support blocks instead
+    // of joining them into one string
+    string_blocks.join("\n---\n")
 }
 
 #[allow(dead_code)]
@@ -229,12 +244,14 @@ struct SessionData {
 type SessionMap = BTreeMap<DateKey, SessionData>;
 
 #[allow(dead_code)]
+#[derive(Default, Clone)]
 struct Entry {
     time: Time,
     blocks: Vec<Block>,
 }
 
 #[allow(dead_code)]
+#[derive(Default)]
 struct Session {
     date: Date,
     entries: Vec<Entry>,
@@ -282,6 +299,64 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                 .collect(),
         })
         .collect()
+}
+
+/// Represents a row in a SQLite table, corresponding with the existing
+/// log schema
+#[allow(dead_code)]
+#[derive(Default)]
+struct LogRow {
+    day: String,
+    time: String,
+    title: String,
+    comment: String,
+    position: usize,
+    category: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct DayBlurbRow {
+    day: String,
+    title: Option<String>,
+    category: Option<String>,
+    blurb: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct SessionRows {
+    logs: Vec<LogRow>,
+    dayblurb: DayBlurbRow,
+}
+
+impl From<Session> for SessionRows {
+    fn from(value: Session) -> SessionRows {
+        let date = &value.date.key;
+        let category = None;
+
+        let dayblurb = DayBlurbRow {
+            day: format!("{:04}-{:02}-{:02}", date.year, date.month, date.day),
+            title: Some(value.date.title),
+            category: category.clone(),
+            blurb: None,
+        };
+
+        let logs = value
+            .entries
+            .into_iter()
+            .map(|e| LogRow {
+                day: format!("{:04}-{:02}-{:02}", date.year, date.month, date.day),
+                time: format!("{:02}:{:02}", e.time.key.hour, e.time.key.minute),
+                category: category.clone(),
+                title: e.time.title,
+                position: 0,
+                comment: blocks_to_string(e.blocks),
+            })
+            .collect();
+
+        SessionRows { dayblurb, logs }
+    }
 }
 
 fn main() {
@@ -524,5 +599,96 @@ mod tests {
             output.into_iter().map(|s| s.date.key.clone()).collect();
 
         assert_eq!(expected_order, generated_order);
+    }
+
+    #[derive(Default, Debug, PartialEq)]
+    struct TestEntry {
+        hour: u8,
+        minute: u8,
+        title: String,
+        body: String,
+    }
+
+    impl TestEntry {
+        fn new(hour: u8, minute: u8, title: &str, body: &str) -> Self {
+            Self {
+                hour,
+                minute,
+                title: title.to_string(),
+                body: body.to_string(),
+            }
+        }
+    }
+
+    impl From<&TestEntry> for Entry {
+        fn from(val: &TestEntry) -> Self {
+            let time = Time {
+                key: TimeKey {
+                    hour: val.hour,
+                    minute: val.minute,
+                },
+                title: val.title.clone(),
+                ..Default::default()
+            };
+            let blocks = vec![Block::Text(val.body.clone())];
+            Entry { time, blocks }
+        }
+    }
+
+    impl From<&LogRow> for TestEntry {
+        fn from(val: &LogRow) -> TestEntry {
+            let parts: Vec<_> = val.time.split(':').collect();
+            let hour = str::parse::<u8>(parts[0]).unwrap();
+            let minute = str::parse::<u8>(parts[1]).unwrap();
+            let title = val.title.clone();
+            let body = val.comment.clone();
+
+            TestEntry {
+                hour,
+                minute,
+                title,
+                body,
+            }
+        }
+    }
+
+    #[test]
+    fn test_session_rows() {
+        let entry_data: Vec<TestEntry> = vec![
+            TestEntry::new(10, 30, "entry A", "This is test entry A"),
+            TestEntry::new(14, 30, "entry B", "Writing an entry for B"),
+            TestEntry::new(15, 55, "entry C", "Third entry."),
+        ];
+        let date = Date {
+            key: DateKey {
+                month: 8,
+                day: 20,
+                year: 2025,
+                context: None,
+            },
+            title: "Title for Day".to_string(),
+            tags: vec![],
+        };
+        let entries: Vec<Entry> = entry_data.iter().map(|e| e.into()).collect();
+        let session = Session {
+            date: date.clone(),
+            entries: entries.clone(),
+        };
+        let session_rows: SessionRows = session.into();
+
+        // Check dayblurb entry
+        let dayblurb = &session_rows.dayblurb;
+        assert_eq!(&dayblurb.day, "2025-08-20");
+        assert!(&dayblurb.title.is_some());
+        if let Some(title) = &dayblurb.title {
+            assert_eq!(title, "Title for Day");
+        }
+
+        assert_eq!(session_rows.logs.len(), entries.len());
+
+        let generated_entries: Vec<TestEntry> =
+            session_rows.logs.iter().map(|e| e.into()).collect();
+
+        assert_eq!(&generated_entries, &entry_data);
     }
 }

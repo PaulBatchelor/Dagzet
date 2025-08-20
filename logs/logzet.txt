@@ -181,3 +181,60 @@ could be refactored further I think, but this is
 good enough.
 
 @22:30 First parse test: can days out of order be put in order? #timelog:00:39:25
+
+@2025-08-20
+@10:46 examining the existing SQLite code I have. Can I re-use it? #timelog:00:22:29
+My SQLite generator code may be flexible enough to accomodate
+the needs for my logs table.
+---
+My SQLite table code might just be flexible enough.
+---
+Reaquainting myself with the schemas now.
+---
+Right. I seem to have two parts to my SQLite interface.
+There's a "Row", which contains data for a row. This
+seems to exist to produce a comma separated set of values
+in a specified order. There's a "Table", an opaque value which
+gets dynamically constructed. This has the parameters as well
+as their names. The Table and Row work together to create
+insert statements.
+---
+Working with this interface, it seems like the path of
+least resistance is to convert a list of Sessions
+into a list of Rows that represent the SQLite table
+representation. From there, the SQLite traits
+can be built out.
+---
+I get the feeling that with a little bit more
+work, I could maybe remove the intermediate
+"Row" data format, but in many ways this is
+simpler and less work since this is already
+written out for me.
+
+@11:18 building out a Row, an initial Session to Rows conversion #timelog:00:48:00
+There are two kinds of rows actually, a "dayblurb" for the
+day with a blurb (does this need to be there if blurb is none?)
+and the entries themselves.
+---
+Working on the initial dayblurb because it's slightly less
+work upfront.
+---
+Now to get some entries populated.
+
+@12:38 continue to populate some entries for the test #timelog:00:18:07
+I think I have the initial test set up. Now to implement
+the actual code to make the entries
+
+@12:56 implement the actual code to generate the entries #timelog:00:23:57
+One thing that I've started doing more is having a single timelog
+broken up into blocks. The current SQLite table doesn't
+actually support blocks, that's something that gets handled
+by the renderer. Moving forward, it would be better to have
+this be modelled with the data.
+---
+For now, only comments will be supported, no preformatted stuff.
+I never actually got around to implementing multi-comments
+in my ad-hoc implementation. So, this'll mean breaking compatibility
+eventually.
+---
+Tests seem to pass. Does that mean it works?
