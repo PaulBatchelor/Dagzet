@@ -1,14 +1,28 @@
 use regex::Regex;
+use std::collections::BTreeMap;
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct DateKey {
+    month: u8,
+    day: u8,
+    year: u16,
+    context: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct TimeKey {
+    hour: u8,
+    minute: u8,
+}
 
 /// Simple representation of a date
 #[allow(dead_code)]
 #[derive(Default)]
 struct Date {
-    month: u8,
-    day: u8,
-    year: u16,
+    key: DateKey,
     title: String,
-    context: Option<String>,
     tags: Vec<String>,
 }
 
@@ -16,8 +30,7 @@ struct Date {
 #[allow(dead_code)]
 #[derive(Default)]
 struct Time {
-    hour: u8,
-    minute: u8,
+    key: TimeKey,
     title: String,
     tags: Vec<String>,
 }
@@ -106,8 +119,7 @@ impl TryFrom<String> for Statement {
                 let (title, tags) = title_and_tags(&caps[3]);
 
                 return Ok(Statement::Time(Time {
-                    hour,
-                    minute,
+                    key: TimeKey { hour, minute },
                     title,
                     tags,
                 }));
@@ -145,11 +157,13 @@ impl TryFrom<String> for Statement {
 
                 let (title, tags) = title_and_tags(&caps[5]);
                 return Ok(Statement::Date(Date {
-                    year,
-                    month,
-                    day,
+                    key: DateKey {
+                        year,
+                        month,
+                        day,
+                        context,
+                    },
                     title,
-                    context,
                     tags,
                 }));
             }
@@ -188,6 +202,28 @@ enum Block {
     Text(String),
     PreText(String),
 }
+
+#[allow(dead_code)]
+struct EntryData {
+    title: String,
+    tags: Vec<String>,
+    blocks: Vec<Block>,
+}
+
+/// An intermediate structure used for sorting time entries for a day
+#[allow(dead_code)]
+type EntryMap = BTreeMap<TimeKey, EntryData>;
+
+#[allow(dead_code)]
+struct SessionData {
+    entries: EntryMap,
+    title: String,
+    tags: Vec<String>,
+}
+
+/// An intermediate structure used for sorting date entries in chronological order
+#[allow(dead_code)]
+type SessionMap = BTreeMap<DateKey, SessionData>;
 
 #[allow(dead_code)]
 struct Entry {
@@ -241,8 +277,9 @@ mod tests {
         );
 
         if let Statement::Time(time) = time {
-            assert_eq!(time.hour, 12);
-            assert_eq!(time.minute, 34);
+            let key = &time.key;
+            assert_eq!(key.hour, 12);
+            assert_eq!(key.minute, 34);
             assert_eq!(&time.title, "this is a title");
         }
     }
@@ -303,9 +340,10 @@ mod tests {
         );
 
         if let Statement::Date(date) = date1 {
-            assert_eq!(date.year, 2025);
-            assert_eq!(date.month, 8);
-            assert_eq!(date.day, 18);
+            let key = &date.key;
+            assert_eq!(key.year, 2025);
+            assert_eq!(key.month, 8);
+            assert_eq!(key.day, 18);
             assert_eq!(&date.title, "Test Title");
         }
 
@@ -318,13 +356,14 @@ mod tests {
         );
 
         if let Statement::Date(date) = date2 {
-            assert_eq!(date.year, 2025);
-            assert_eq!(date.month, 8);
-            assert_eq!(date.day, 18);
+            let key = date.key;
+            assert_eq!(key.year, 2025);
+            assert_eq!(key.month, 8);
+            assert_eq!(key.day, 18);
             assert_eq!(&date.title, "Test Title (with context name)");
-            assert!(date.context.is_some());
+            assert!(key.context.is_some());
 
-            if let Some(context) = &date.context {
+            if let Some(context) = &key.context {
                 assert_eq!(context, "abc");
             }
         }
@@ -338,11 +377,12 @@ mod tests {
         );
 
         if let Statement::Date(date) = date3 {
-            assert_eq!(date.year, 2025);
-            assert_eq!(date.month, 8);
-            assert_eq!(date.day, 18);
+            let key = date.key;
+            assert_eq!(key.year, 2025);
+            assert_eq!(key.month, 8);
+            assert_eq!(key.day, 18);
             assert_eq!(&date.title, "Title with hashtags?");
-            assert!(date.context.is_none());
+            assert!(key.context.is_none());
             let expected_tags: Vec<_> = ["tag1", "tag2"].into_iter().map(String::from).collect();
             assert_eq!(&date.tags, &expected_tags);
         }
@@ -356,14 +396,15 @@ mod tests {
         );
 
         if let Statement::Date(date) = date4 {
-            assert_eq!(date.year, 2025);
-            assert_eq!(date.month, 8);
-            assert_eq!(date.day, 18);
+            let key = &date.key;
+            assert_eq!(key.year, 2025);
+            assert_eq!(key.month, 8);
+            assert_eq!(key.day, 18);
             assert_eq!(&date.title, "Everything!");
-            assert!(date.context.is_some());
+            assert!(key.context.is_some());
             let expected_tags: Vec<_> = ["tag2", "tag1"].into_iter().map(String::from).collect();
             assert_eq!(&date.tags, &expected_tags);
-            if let Some(context) = &date.context {
+            if let Some(context) = &key.context {
                 assert_eq!(context, "abcde");
             }
         }

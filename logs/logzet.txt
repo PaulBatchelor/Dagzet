@@ -174,3 +174,8 @@ and EntryMap. EntryMap is an alias for BTreeMap<TimeKey,Block>.
 SessionMap is an alias for BTreeMap<DateKey,EntryMap>. Once it
 is all populated, they can get converted to regular list of Sessions
 which contain a regular list of entries.
+
+@22:02 some initial refactoring to get DateKey and TimeKey #timelog:00:27:12
+I also got the initial BTreeMaps set up as well. It
+could be refactored further I think, but this is
+good enough.
