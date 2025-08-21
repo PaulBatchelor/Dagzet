@@ -387,3 +387,39 @@ map and an entity list, both of which are immutable by the
 time they leave the function. In a way, the Rust Compiler
 is forcing us to build these abstractions. Probably a good
 thing?
+
+@12:34 now we fight the borrow checker. get blocks to be references #timelog:00:12:19
+I get the feeling there might be a trick to this.
+---
+Here come the lifetime annotations.
+---
+Okay, the red squigglys are here. The problem has to do with
+the way blocks are getting populated with lines. There seems
+to be too many "access lines". The way parsing happens is,
+text lines are always appended to the last created block.
+The way this block is being accessed is through the last
+created entity, but this only has a read-only reference.
+This should probably be only done via the entity list.
+---
+Well, I commented out some things. It builds, but some
+tests fail. As expected.
+
+@13:11 trying to build an EntityListBuilder #timelog:00:35:41
+This will be an interface that can populate a list of entities,
+and at the end, I can return a immutable reference
+to the list built. Should hopefully encapsulate some of the
+mutabiliy issues
+---
+all write operations will be done through this
+interface, instead of indirectly through the
+last created entity. It's already assumed that
+the last block made will be tied to the last
+entity.
+---
+Sure enough, the moment I add things that return references,
+I run into lifetime issues. I think I might
+need to encapsulate the session map.
+---
+I have encapsulated the session map, which hopefully means
+later I can move some logic inside the struct methods.
+I've added some TODOs. In the meantime, gotta go.
