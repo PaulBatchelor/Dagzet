@@ -312,3 +312,38 @@ Okay. So this might be a non-trivial refactor. I think
 I need to reverse the thining. The entity list owns all
 the components, and the struct just references it. This
 is how an entity component system would work.
+
+@20:12 let's try that entity list #timelog:01:49:07
+I'm going timebox this, get some initial scaffolding in.
+---
+Huh, there's really just three entity types at the end of
+the day: Sessions, Entries, and Blocks. Doesn't seem
+so bad...
+---
+To try things out, I'm going to work on making all Blocks references,
+and maintaing a list of blocks externally. This should get
+the lifetime annotations correct. From there, I can more
+generalize this list of blocks into a pool.
+---
+Okay, it started getting a little hairy there. I tried getting
+blocks working for output data structure. But what if it was
+for the intermediate data structure (BlockData)? This could
+potentially be an internal refactor, might be less damage.
+---
+It has been an hour. I'm still running into similar borrow
+checker woes. Once again, this feels like a dead end.
+---
+We could try fake pointers and a block arena.
+---
+Well, the block list works! A good proof of concept.
+The way to extend this would be to turn this into
+an entity Enum.
+---
+Okay, I made it a more generic list. It works, but I'm already
+seeing the issues of indirection. Once more types get introduced,
+everything just becomes vectors of pointers. Sigh.
+---
+Final thoughts: session "map" needs to be taken into another function
+I think. Entity list might another intermediate step. commands might
+be a part of the entity list? Statements -> Entities -> Entities + Maps with pointers -> Sessions
+data struct (no references or entities), other linked metadata.

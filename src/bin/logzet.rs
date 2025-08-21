@@ -225,8 +225,16 @@ enum BlockData {
     Text(Vec<String>),
 }
 
-impl From<BlockData> for Block {
-    fn from(value: BlockData) -> Block {
+impl BlockData {
+    fn push(&mut self, text: String) {
+        match self {
+            BlockData::Text(lines) => lines.push(text),
+        }
+    }
+}
+
+impl From<&BlockData> for Block {
+    fn from(value: &BlockData) -> Block {
         match value {
             BlockData::Text(lines) => Block::Text(lines.join(" ")),
         }
@@ -234,10 +242,13 @@ impl From<BlockData> for Block {
 }
 
 #[allow(dead_code)]
+type EntityIndex = usize;
+
+#[allow(dead_code)]
 struct EntryData {
     title: String,
     tags: Vec<String>,
-    blocks: Vec<BlockData>,
+    blocks: Vec<EntityIndex>,
 }
 
 /// An intermediate structure used for sorting time entries for a day
@@ -270,11 +281,25 @@ struct Session {
 }
 
 #[allow(dead_code)]
+enum Entity {
+    Block(BlockData),
+}
+
+impl Entity {
+    fn block(&mut self) -> Option<&mut BlockData> {
+        match self {
+            Entity::Block(data) => Some(data),
+        }
+    }
+}
+
+#[allow(dead_code)]
 // TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
     let mut session_map = SessionMap::new();
     let mut current_session: Option<DateKey> = None;
     let mut current_entry: Option<TimeKey> = None;
+    let mut entities: Vec<Entity> = vec![];
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {
@@ -337,11 +362,13 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
             };
 
             if entry.blocks.is_empty() {
-                entry.blocks.push(BlockData::Text(vec![text.text]));
-            } else if let Some(last) = entry.blocks.last_mut() {
-                match last {
-                    BlockData::Text(lines) => lines.push(text.text),
-                };
+                //entry.blocks.push(BlockData::Text(vec![text.text]));
+                entry.blocks.push(entities.len());
+                entities.push(Entity::Block(BlockData::Text(vec![text.text])));
+            } else if let Some(last) = entry.blocks.last() {
+                if let Some(blk) = entities[*last].block() {
+                    blk.push(text.text);
+                }
             }
             continue;
         }
@@ -372,7 +399,9 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                 _ => panic!("entry not found"),
             };
 
-            entry.blocks.push(BlockData::Text(Vec::new()));
+            //entry.blocks.push(BlockData::Text(Vec::new()));
+            entry.blocks.push(entities.len());
+            entities.push(Entity::Block(BlockData::Text(Vec::new())));
 
             continue;
         }
@@ -397,7 +426,13 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                         title: edata.title,
                         tags: edata.tags,
                     },
-                    blocks: edata.blocks.into_iter().map(|b| b.into()).collect(),
+                    blocks: edata
+                        .blocks
+                        .into_iter()
+                        .map(|b| match &entities[b] {
+                            Entity::Block(blk) => blk.into(),
+                        })
+                        .collect(),
                 })
                 .collect(),
         })
