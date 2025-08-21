@@ -182,7 +182,7 @@ good enough.
 
 @22:30 First parse test: can days out of order be put in order? #timelog:00:39:25
 
-@2025-08-20
+@2025-08-20#logzet Brooklyn
 @10:46 examining the existing SQLite code I have. Can I re-use it? #timelog:00:22:29
 My SQLite generator code may be flexible enough to accomodate
 the needs for my logs table.
@@ -347,3 +347,43 @@ Final thoughts: session "map" needs to be taken into another function
 I think. Entity list might another intermediate step. commands might
 be a part of the entity list? Statements -> Entities -> Entities + Maps with pointers -> Sessions
 data struct (no references or entities), other linked metadata.
+
+@2025-08-21 Brooklyn
+@12:06 Back to solving the entity list problem, first restating the problem #timelog:00:13:54
+I am opting for a different structure than what currently exists.
+The restructuring is going to be needed because it will make it
+easier to tie content into dagzet.
+---
+The restructuring involves building an entity list, where every
+possible type of item a log can make lives. Currently that's
+Session (a day plus context), Entry (a timestamped log entry in a Session),
+and a Block (something attached to an entry, usually text).
+The existing structure (a struct outling the tree-structure hierarchy
+of the session->entry->block relationships), would be refactored to
+link to references from the entity list.
+---
+The reason why this way is ideal: it would allow building structures
+that can easily link entities (referenced by an entity ID) to
+groups of nodes. I want to extend the functionality of this linking
+system beyond the original implementation I had to make it possible
+to not only link to entries, but individual blocks as well.
+---
+The trouble is, how do we get this to work in such a way that
+the borrow checker likes this. Right now, I am testing things
+out by making blocks tracked externally. I managed to get fake
+pointers working, but this is subpar because types will go away
+with that approach, it's all just usizes.
+---
+I want to try and separate out the construction of the intermediate
+data format, which I use to sort out the timestamps for sessions
+and entries. Maybe with the right encapsulation I can please the
+borrow checker? It's mostly been mutability issues. My lifetime
+annotations have been no problem.
+
+@12:23 pulling out sessionmap #timelog:00:07:26
+This actually is helpful because it builds an abstraction
+barrier of immutability. This new function returns a session
+map and an entity list, both of which are immutable by the
+time they leave the function. In a way, the Rust Compiler
+is forcing us to build these abstractions. Probably a good
+thing?

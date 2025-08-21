@@ -293,9 +293,7 @@ impl Entity {
     }
 }
 
-#[allow(dead_code)]
-// TODO: error handling, plz read that rust for rustaceans chapter
-fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
+fn build_session_map(stmts: Vec<Statement>) -> (SessionMap, Vec<Entity>) {
     let mut session_map = SessionMap::new();
     let mut current_session: Option<DateKey> = None;
     let mut current_entry: Option<TimeKey> = None;
@@ -406,6 +404,14 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
             continue;
         }
     }
+
+    (session_map, entities)
+}
+
+#[allow(dead_code)]
+// TODO: error handling, plz read that rust for rustaceans chapter
+fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
+    let (session_map, entities) = build_session_map(stmts);
 
     // TODO: From traits
     session_map
