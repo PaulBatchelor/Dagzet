@@ -185,21 +185,6 @@ impl TryFrom<String> for Statement {
     }
 }
 
-/// A line range
-#[allow(dead_code)]
-struct LineRange {
-    start: usize,
-    end: Option<usize>,
-}
-
-/// Used for source mapping
-#[allow(dead_code)]
-struct Location<T> {
-    filename: String,
-    lines: LineRange,
-    data: T,
-}
-
 #[allow(dead_code)]
 #[derive(Clone)]
 enum Block {
@@ -231,6 +216,132 @@ impl From<BlockData> for Block {
             BlockData::Text(lines) => Block::Text(lines.join(" ")),
         }
     }
+}
+
+#[allow(dead_code)]
+enum Entity {
+    Block(BlockData),
+    Entry(Time),
+    Session(Date),
+}
+
+#[allow(dead_code)]
+fn statements_to_entities(stmts: Vec<Statement>) -> Vec<Entity> {
+    let mut entities = vec![];
+    let mut curblock: Option<Vec<String>> = None;
+
+    for stmt in stmts {
+        if let Statement::Date(date) = stmt {
+            // A new session will implicitly end the current block, if there is one
+            if let Some(blk) = curblock {
+                entities.push(Entity::Block(BlockData::Text(blk)));
+                curblock = None;
+            }
+            entities.push(Entity::Session(date));
+            continue;
+        }
+
+        if let Statement::Time(time) = stmt {
+            // A new entry will implicitly end the current block, if there is one
+            if let Some(blk) = curblock {
+                entities.push(Entity::Block(BlockData::Text(blk)));
+                curblock = None;
+            }
+            entities.push(Entity::Entry(time));
+            continue;
+        }
+
+        if let Statement::TextLine(text) = stmt {
+            if let Some(ref mut blk) = curblock {
+                blk.push(text.text);
+            } else {
+                curblock = Some(vec![text.text]);
+            }
+            continue;
+        }
+
+        if matches!(stmt, Statement::Break) {
+            if let Some(blk) = curblock {
+                entities.push(Entity::Block(BlockData::Text(blk)));
+                curblock = None;
+            }
+
+            continue;
+        }
+    }
+    // Wrap up last block if it is the last thing
+    if let Some(blk) = curblock {
+        entities.push(Entity::Block(BlockData::Text(blk)));
+    }
+    entities
+}
+
+#[allow(dead_code)]
+fn entities_to_session_map(entities: Vec<Entity>) -> SessionMap {
+    let mut session_map = SessionMap::new();
+    let mut current_session: Option<DateKey> = None;
+    let mut current_entry: Option<TimeKey> = None;
+    for entity in entities {
+        match entity {
+            Entity::Session(date) => {
+                // TODO: avoid clobbering
+                session_map.insert(
+                    date.key.clone(),
+                    SessionData {
+                        title: date.title,
+                        tags: date.tags,
+                        entries: EntryMap::new(),
+                    },
+                );
+                current_session = Some(date.key.clone());
+            }
+            Entity::Entry(time) => {
+                if let Some(session_key) = &current_session {
+                    if let Some(session) = session_map.get_mut(session_key) {
+                        session.entries.insert(
+                            time.key.clone(),
+                            EntryData {
+                                title: time.title,
+                                tags: time.tags,
+                                blocks: vec![],
+                            },
+                        );
+                        current_entry = Some(time.key);
+                    }
+                } else {
+                    // TODO: error handling
+                    panic!("No active session found");
+                }
+            }
+            Entity::Block(block) => {
+                let session_key = match &current_session {
+                    Some(key) => key,
+                    // TODO: error handling
+                    _ => panic!("No active session found"),
+                };
+
+                let entry_key = match &current_entry {
+                    Some(key) => key,
+                    // TODO: error handling
+                    _ => panic!("No active entry found"),
+                };
+
+                let session = match session_map.get_mut(session_key) {
+                    Some(data) => data,
+                    // TODO: error handling
+                    _ => panic!("session not found"),
+                };
+
+                let entry = match session.entries.get_mut(entry_key) {
+                    Some(data) => data,
+                    // TODO: error handling
+                    _ => panic!("entry not found"),
+                };
+                entry.blocks.push(block);
+            }
+        }
+    }
+    session_map
 }
 
 #[allow(dead_code)]
@@ -269,115 +380,15 @@ struct Session {
     entries: Vec<Entry>,
 }
 
+fn build_session_map(stmts: Vec<Statement>) -> SessionMap {
+    let entities = statements_to_entities(stmts);
+    entities_to_session_map(entities)
+}
+
 #[allow(dead_code)]
 // TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
-    let mut session_map = SessionMap::new();
-    let mut current_session: Option<DateKey> = None;
-    let mut current_entry: Option<TimeKey> = None;
-
-    for stmt in stmts {
-        if let Statement::Date(date) = stmt {
-            // TODO: avoid clobbering
-            session_map.insert(
-                date.key.clone(),
-                SessionData {
-                    title: date.title,
-                    tags: date.tags,
-                    entries: EntryMap::new(),
-                },
-            );
-            current_session = Some(date.key.clone());
-            continue;
-        }
-
-        if let Statement::Time(time) = stmt {
-            if let Some(session_key) = &current_session {
-                if let Some(session) = session_map.get_mut(session_key) {
-                    session.entries.insert(
-                        time.key.clone(),
-                        EntryData {
-                            title: time.title,
-                            tags: time.tags,
-                            blocks: vec![],
-                        },
-                    );
-                    current_entry = Some(time.key);
-                }
-            } else {
-                // TODO: error handling
-                panic!("No active session found");
-            }
-            continue;
-        }
-
-        if let Statement::TextLine(text) = stmt {
-            let session_key = match &current_session {
-                Some(key) => key,
-                // TODO: error handling
-                _ => panic!("No active session found"),
-            };
-
-            let entry_key = match &current_entry {
-                Some(key) => key,
-                // TODO: error handling
-                _ => panic!("No active entry found"),
-            };
-
-            let session = match session_map.get_mut(session_key) {
-                Some(data) => data,
-                // TODO: error handling
-                _ => panic!("session not found"),
-            };
-
-            let entry = match session.entries.get_mut(entry_key) {
-                Some(data) => data,
-                // TODO: error handling
-                _ => panic!("entry not found"),
-            };
-
-            if entry.blocks.is_empty() {
-                entry.blocks.push(BlockData::Text(vec![text.text]));
-            } else if let Some(last) = entry.blocks.last_mut() {
-                match last {
-                    BlockData::Text(lines) => lines.push(text.text),
-                };
-            }
-            continue;
-        }
-
-        if matches!(stmt, Statement::Break) {
-            // TODO: deduplicate session/entry getter logic
-            let session_key = match &current_session {
-                Some(key) => key,
-                // TODO: error handling
-                _ => panic!("No active session found"),
-            };
-
-            let entry_key = match &current_entry {
-                Some(key) => key,
-                // TODO: error handling
-                _ => panic!("No active entry found"),
-            };
-
-            let session = match session_map.get_mut(session_key) {
-                Some(data) => data,
-                // TODO: error handling
-                _ => panic!("session not found"),
-            };
-
-            let entry = match session.entries.get_mut(entry_key) {
-                Some(data) => data,
-                // TODO: error handling
-                _ => panic!("entry not found"),
-            };
-
-            entry.blocks.push(BlockData::Text(Vec::new()));
-
-            continue;
-        }
-    }
-
+    let session_map = build_session_map(stmts);
     // TODO: From traits
     session_map
         .into_iter()
@@ -860,10 +871,60 @@ mod tests {
             _ => panic!("Expected block text"),
         };
 
-        // Make sure line breaking logic is being handled correctly"
+        // Make sure line breaking logic is being handled correctly
         assert_eq!(block_text, "I am writing some words and I am doing my task");
 
         assert_eq!(&entries[1].time.key, &time2);
         assert_eq!(entries[1].blocks.len(), 3);
+    }
+
+    #[test]
+    fn test_statements_to_entries() {
+        let dt = Statement::Date;
+        let tm = Statement::Time;
+        let tl = Statement::TextLine;
+        let br = Statement::Break;
+        let time1 = TimeKey {
+            hour: 14,
+            minute: 1,
+        };
+        let time2 = TimeKey {
+            hour: 15,
+            minute: 30,
+        };
+        let document: Vec<Statement> = vec![
+            dt(Date::default()),
+            tm(Time {
+                key: time1.clone(),
+                title: "First task of the day".to_string(),
+                tags: vec!["timelog:00:15:00".to_string()],
+            }),
+            tl(TextLine {
+                text: "I am writing some words".to_string(),
+            }),
+            tl(TextLine {
+                text: "and I am doing my task".to_string(),
+            }),
+            tm(Time {
+                key: time2.clone(),
+                title: "Brainstorming".to_string(),
+                tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+            }),
+            tl(TextLine {
+                text: "this is a thought I had".to_string(),
+            }),
+            br.clone(),
+            tl(TextLine {
+                text: "this is a another thought I had".to_string(),
+            }),
+            br.clone(),
+            tl(TextLine {
+                text: "one more thought".to_string(),
+            }),
+        ];
+
+        let entities = statements_to_entities(document);
+
+        assert_eq!(entities.len(), 7);
     }
 }

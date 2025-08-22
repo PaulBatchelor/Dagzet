@@ -479,3 +479,18 @@ I shouldn't have been going down the path
 of references. Learned my mistake here.
 ---
 I'm taking a break.
+
+@14:31 initial scaffolding for entity list #timelog:00:13:54
+I've set things up in such a way that the only part in
+the pipeline that is changing is what is happening
+between line statements and the session map. With
+any luck, I should be able to get a session map from this
+new entity list.
+---
+The session map may need to be reworked to compensate for
+connections to nodes, but the entity list should position
+things in a good place for that because it'll allow easy
+access to the last item, and more granular control over
+what is being referenced.
+
+@14:29 initial attempt implementing the scaffolding #timelog:00:35:27
