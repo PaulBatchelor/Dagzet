@@ -507,3 +507,49 @@ All entities need to have an id now. Enforce this with
 traits.
 ---
 WithId trait implemented. DZ commands should work for entries and blocks.
+
+@16:56 I gotta think how this is going to work with SQL tables #timelog:01:01:58
+The schemas are going to need to be adjusted
+---
+Big change is going to be that comment blocks will need to be in their
+own table I think. It's possible in the future we mave more kinds
+of blocks, but right now it's just comments. sometimes they are
+preformatted with line breaks. But the row is going to be identical by the time
+it hits SQLite.
+---
+Later, it might be a good idea to have an entity list table that maps ID values
+to entity types for a type lookup. But, in practice, I don't think that sort
+of thing is going to be needed for queries (yet).
+---
+I think an entity table might actually be necessary if I want to append logs to an
+existing database like I do with dagzet and dz_nodes.
+---
+actually, dagzet just inserts the ids as-is without any kind of offset calculation
+in the SQLite query (at least, from what I can see). It *is* able to do
+id resolution from a path.
+---
+Am I really just generating my knowledge graph by cramming a shitton of
+arguments on the commandline?
+---
+oh, I see. yeah, my node list has ID values auto-generated from SQLite,
+but "position" is a value that gets inserted which I was confusing for
+node id. Well, that makes things more interesting.
+---
+Might need to make the id a string like a timestamp or something. There
+are definitely ways to make unique identifiers.
+---
+YYYY-MM-DD-(CONTEXT)-HH-MM-(CONTEXT)-POS I think is all that's needed.
+If you don't supply a unique context, logs can overwrite eachother, but
+I think that's fine
+---
+YYYY-MM-DD-ABCDEFG-HH-MM-ABCDEFG-0FF
+---
+38322B65-1651-4272-8490-93557971EF6B
+---
+For context, for the same size of a UUID,
+you can have a session AND time with a unique
+context tag of 7 characters, and the session can
+have 4095 blocks associated with it when position
+is encoded in base16 (12-bit number). So, this
+might be a perfectly reasonable persistent UUID.
+

@@ -550,17 +550,21 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
 #[allow(dead_code)]
 #[derive(Default)]
 struct LogRow {
+    entity_id: EntityId,
     day: String,
     time: String,
     title: String,
-    comment: String,
+    //comment: String,
     position: usize,
     category: Option<String>,
+    nblocks: usize,
+    top_block: Option<usize>,
 }
 
 #[allow(dead_code)]
 #[derive(Default)]
 struct DayBlurbRow {
+    entity_id: EntityId,
     day: String,
     title: Option<String>,
     category: Option<String>,
@@ -569,9 +573,33 @@ struct DayBlurbRow {
 
 #[allow(dead_code)]
 #[derive(Default)]
+struct BlockRow {
+    entity_id: EntityId,
+    parent_id: EntityId,
+    position: usize,
+    content: String,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct LogConnectionsRow {
+    entity_id: EntityId,
+    node: String,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
 struct SessionRows {
     logs: Vec<LogRow>,
     dayblurb: DayBlurbRow,
+    blocks: Vec<BlockRow>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct EntityRow {
+    entity_id: EntityId,
+    entity_type: String,
 }
 
 impl From<Session> for SessionRows {
@@ -584,6 +612,7 @@ impl From<Session> for SessionRows {
             title: Some(value.date.title),
             category: category.clone(),
             blurb: None,
+            ..Default::default()
         };
 
         let logs = value
@@ -595,11 +624,18 @@ impl From<Session> for SessionRows {
                 category: category.clone(),
                 title: e.time.title,
                 position: 0,
-                comment: blocks_to_string(e.blocks),
+                //comment: blocks_to_string(e.blocks),
+                ..Default::default()
             })
             .collect();
 
-        SessionRows { dayblurb, logs }
+        let blocks = Vec::new();
+
+        SessionRows {
+            dayblurb,
+            logs,
+            blocks,
+        }
     }
 }
 
@@ -885,7 +921,8 @@ mod tests {
             let hour = str::parse::<u8>(parts[0]).unwrap();
             let minute = str::parse::<u8>(parts[1]).unwrap();
             let title = val.title.clone();
-            let body = val.comment.clone();
+            //let body = val.comment.clone();
+            let body = String::new();
 
             TestEntry {
                 hour,
