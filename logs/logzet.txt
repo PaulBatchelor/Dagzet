@@ -423,3 +423,59 @@ need to encapsulate the session map.
 I have encapsulated the session map, which hopefully means
 later I can move some logic inside the struct methods.
 I've added some TODOs. In the meantime, gotta go.
+
+@2025-08-22#logzet Brooklyn, PLG
+@11:20 continued work on EntityListBuilder #timelog:01:31:57
+I feel like I'm on the right path with encapsulation.
+This seems to please the borrow checker.
+---
+...except some tests aren't passing. I thought I got
+that working yesterday. Hmm...
+---
+looks like the grouping logic is broken.
+---
+right, I didn't actually implement the methods
+for appending stuff to blocks and creating
+new blocks.
+---
+Running into lifetime issues trying to append
+the reference to the block to the entry.
+---
+I'm wondering if I need to group the session
+map and the entity list into a struct.
+---
+I've merged the two things into a struct,
+and I'm still getting lifetime issues.
+---
+There are too many mutable sources. the session
+map and entity list can't both be mutable.
+---
+Can we build a session map, with references, from a read-only
+entity list?
+---
+Or maybe, there's a sort of thing where we use a builder
+pattern that appends items to the session map, but the
+write is encapsulated in a method.
+---
+Yeah, that's not going to work either.
+---
+I'm trying the Statements -> Entities -> SessionData -> Session route,
+where the new thing is explicitly making the entities,
+THEN making the session data.
+---
+I'm going back a bit further now. The entity list initial
+attempt was flawed from the start.
+
+@12:57 Make entity list an initial intermediate format. NEVERMIND. #timelog:00:29:57
+Blow up more old entity list
+---
+Now to think about this entity list a bit.
+---
+Entities are something inbetween statements
+and the full-on data representations. No
+nesting relationships are produced yet.
+---
+I shouldn't have been going down the path
+of references. Learned my mistake here.
+---
+I'm taking a break.

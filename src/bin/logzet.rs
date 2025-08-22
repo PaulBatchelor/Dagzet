@@ -225,8 +225,8 @@ enum BlockData {
     Text(Vec<String>),
 }
 
-impl From<&BlockData> for Block {
-    fn from(value: &BlockData) -> Block {
+impl From<BlockData> for Block {
+    fn from(value: BlockData) -> Block {
         match value {
             BlockData::Text(lines) => Block::Text(lines.join(" ")),
         }
@@ -234,29 +234,26 @@ impl From<&BlockData> for Block {
 }
 
 #[allow(dead_code)]
-type EntityIndex = usize;
-
-#[allow(dead_code)]
-struct EntryData<'a> {
+struct EntryData {
     title: String,
     tags: Vec<String>,
-    blocks: Vec<&'a BlockData>,
+    blocks: Vec<BlockData>,
 }
 
 /// An intermediate structure used for sorting time entries for a day
 #[allow(dead_code)]
-type EntryMap<'a> = BTreeMap<TimeKey, EntryData<'a>>;
+type EntryMap = BTreeMap<TimeKey, EntryData>;
 
 #[allow(dead_code)]
-struct SessionData<'a> {
-    entries: EntryMap<'a>,
+struct SessionData {
+    entries: EntryMap,
     title: String,
     tags: Vec<String>,
 }
 
 /// An intermediate structure used for sorting date entries in chronological order
 #[allow(dead_code)]
-type SessionMap<'a> = BTreeMap<DateKey, SessionData<'a>>;
+type SessionMap = BTreeMap<DateKey, SessionData>;
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]
@@ -273,56 +270,16 @@ struct Session {
 }
 
 #[allow(dead_code)]
-enum Entity {
-    Block(BlockData),
-}
-
-#[allow(dead_code)]
-#[derive(Default)]
-struct EntityList<'a> {
-    entities: Vec<Entity>,
-    last_block: Option<&'a BlockData>,
-    session_map: SessionMap<'a>,
-}
-
-#[allow(dead_code)]
-impl<'a> EntityList<'a> {
-    fn new() -> Self {
-        EntityList::default()
-    }
-
-    fn build(self) -> (SessionMap<'a>, Vec<Entity>) {
-        (self.session_map, self.entities)
-    }
-
-    fn new_block(&mut self, text: Option<String>) -> Option<&BlockData> {
-        if let Some(text) = text {
-            self.entities
-                .push(Entity::Block(BlockData::Text(vec![text])));
-        } else {
-            self.entities
-                .push(Entity::Block(BlockData::Text(Vec::new())));
-        }
-        // TODO: extract reference from vec
-        None
-
-        // TODO: append new block to current entry
-    }
-
-    fn append_to_block(&mut self, _text: String) {}
-}
-
-fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>) {
-    //let mut session_map = SessionMap::new();
+// TODO: error handling, plz read that rust for rustaceans chapter
+fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
+    let mut session_map = SessionMap::new();
     let mut current_session: Option<DateKey> = None;
     let mut current_entry: Option<TimeKey> = None;
-    //let mut entities: Vec<Entity> = vec![];
-    let mut entities = EntityList::new();
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {
             // TODO: avoid clobbering
-            entities.session_map.insert(
+            session_map.insert(
                 date.key.clone(),
                 SessionData {
                     title: date.title,
@@ -336,7 +293,7 @@ fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>)
 
         if let Statement::Time(time) = stmt {
             if let Some(session_key) = &current_session {
-                if let Some(session) = entities.session_map.get_mut(session_key) {
+                if let Some(session) = session_map.get_mut(session_key) {
                     session.entries.insert(
                         time.key.clone(),
                         EntryData {
@@ -367,7 +324,7 @@ fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>)
                 _ => panic!("No active entry found"),
             };
 
-            let session = match entities.session_map.get_mut(session_key) {
+            let session = match session_map.get_mut(session_key) {
                 Some(data) => data,
                 // TODO: error handling
                 _ => panic!("session not found"),
@@ -380,20 +337,11 @@ fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>)
             };
 
             if entry.blocks.is_empty() {
-                //entry.blocks.push(BlockData::Text(vec![text.text]));
-                //entry.blocks.push(entities.len());
-                //entities.push(Entity::Block(BlockData::Text(vec![text.text])));
-                let blkref = entities.new_block(Some(text.text));
-                if let Some(blkref) = blkref {
-                    // TODO: encapsulate this logic
-                    // entry.blocks.push(blkref);
-                }
-            } else if let Some(last) = entry.blocks.last() {
-                // TODO: push text to entity list directly
-                //if let Some(blk) = entities[*last].block() {
-                //    blk.push(text.text);
-                //}
-                entities.append_to_block(text.text);
+                entry.blocks.push(BlockData::Text(vec![text.text]));
+            } else if let Some(last) = entry.blocks.last_mut() {
+                match last {
+                    BlockData::Text(lines) => lines.push(text.text),
+                };
             }
             continue;
         }
@@ -412,7 +360,7 @@ fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>)
                 _ => panic!("No active entry found"),
             };
 
-            let session = match entities.session_map.get_mut(session_key) {
+            let session = match session_map.get_mut(session_key) {
                 Some(data) => data,
                 // TODO: error handling
                 _ => panic!("session not found"),
@@ -424,30 +372,11 @@ fn build_session_map<'a>(stmts: Vec<Statement>) -> (SessionMap<'a>, Vec<Entity>)
                 _ => panic!("entry not found"),
             };
 
-            //entry.blocks.push(BlockData::Text(Vec::new()));
-            //entry.blocks.push(entities.len());
-            //entities.push(Entity::Block(BlockData::Text(Vec::new())));
-
-            // PAUL: this doesn't work either
-            let blkref = entities.new_block(None);
-
-            if let Some(blkref) = blkref {
-                // TODO: encapsulate this logic
-                // entry.blocks.push(blkref);
-            }
+            entry.blocks.push(BlockData::Text(Vec::new()));
 
             continue;
         }
     }
-
-    //(session_map, entities.build())
-    entities.build()
-}
-
-#[allow(dead_code)]
-// TODO: error handling, plz read that rust for rustaceans chapter
-fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
-    let (session_map, _entities) = build_session_map(stmts);
 
     // TODO: From traits
     session_map
@@ -468,7 +397,7 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                         title: edata.title,
                         tags: edata.tags,
                     },
-                    blocks: edata.blocks.into_iter().map(|blk| blk.into()).collect(),
+                    blocks: edata.blocks.into_iter().map(|b| b.into()).collect(),
                 })
                 .collect(),
         })
