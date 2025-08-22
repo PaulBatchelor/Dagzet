@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[allow(dead_code)]
 #[derive(Default, Clone, Debug, PartialEq, Ord, Eq, PartialOrd)]
@@ -30,9 +30,23 @@ struct Date {
 #[allow(dead_code)]
 #[derive(Default, Clone)]
 struct Time {
+    id: EntityId,
     key: TimeKey,
     title: String,
     tags: Vec<String>,
+}
+
+impl WithId for Time {
+    type Id = EntityId;
+
+    fn id(&self) -> Self::Id {
+        self.id
+    }
+
+    fn with_id(mut self, id: Self::Id) -> Self {
+        self.id = id;
+        self
+    }
 }
 
 /// A single line of text
@@ -125,6 +139,7 @@ impl TryFrom<String> for Statement {
                     key: TimeKey { hour, minute },
                     title,
                     tags,
+                    ..Default::default()
                 }));
             }
             // Try to match it on a Date
@@ -206,16 +221,57 @@ fn blocks_to_string(value: Vec<Block>) -> String {
     string_blocks.join("\n---\n")
 }
 
+#[derive(Default)]
+struct TextBlock {
+    uuid: EntityId,
+    lines: Vec<String>,
+}
+
+impl TextBlock {
+    fn new(lines: Vec<String>) -> Self {
+        TextBlock {
+            lines,
+            ..Default::default()
+        }
+    }
+}
+
 enum BlockData {
-    Text(Vec<String>),
+    Text(TextBlock),
 }
 
 impl From<BlockData> for Block {
     fn from(value: BlockData) -> Block {
         match value {
-            BlockData::Text(lines) => Block::Text(lines.join(" ")),
+            BlockData::Text(lines) => Block::Text(lines.lines.join(" ")),
         }
     }
+}
+
+impl WithId for BlockData {
+    type Id = EntityId;
+
+    fn id(&self) -> Self::Id {
+        match self {
+            BlockData::Text(text) => text.uuid,
+        }
+    }
+
+    fn with_id(self, id: Self::Id) -> Self {
+        match self {
+            BlockData::Text(mut text) => {
+                text.uuid = id;
+                BlockData::Text(text)
+            }
+        }
+    }
+}
+
+#[allow(dead_code)]
+trait WithId {
+    type Id;
+    fn id(&self) -> Self::Id;
+    fn with_id(self, id: Self::Id) -> Self;
 }
 
 #[allow(dead_code)]
@@ -225,29 +281,63 @@ enum Entity {
     Session(Date),
 }
 
+impl WithId for Entity {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        match self {
+            Entity::Block(block) => block.id(),
+            Entity::Entry(entry) => entry.id(),
+            Entity::Session(_session) => unimplemented!(),
+        }
+    }
+    fn with_id(self, id: Self::Id) -> Self {
+        match self {
+            Entity::Block(block) => Entity::Block(block.with_id(id)),
+            Entity::Entry(entry) => Entity::Entry(entry.with_id(id)),
+            Entity::Session(ref _session) => self,
+        }
+    }
+}
+
 #[allow(dead_code)]
-fn statements_to_entities(stmts: Vec<Statement>) -> Vec<Entity> {
+type EntityId = usize;
+
+type DagzetPathList = Vec<String>;
+
+#[allow(dead_code)]
+struct EntityList {
+    entities: Vec<Entity>,
+    connections: HashMap<EntityId, DagzetPathList>,
+}
+
+#[allow(dead_code)]
+fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     let mut entities = vec![];
     let mut curblock: Option<Vec<String>> = None;
+    let mut connections: HashMap<EntityId, DagzetPathList> = HashMap::new();
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {
             // A new session will implicitly end the current block, if there is one
             if let Some(blk) = curblock {
-                entities.push(Entity::Block(BlockData::Text(blk)));
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
                 curblock = None;
             }
-            entities.push(Entity::Session(date));
+            entities.push(Entity::Session(date).with_id(entities.len()));
             continue;
         }
 
         if let Statement::Time(time) = stmt {
             // A new entry will implicitly end the current block, if there is one
             if let Some(blk) = curblock {
-                entities.push(Entity::Block(BlockData::Text(blk)));
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
                 curblock = None;
             }
-            entities.push(Entity::Entry(time));
+            entities.push(Entity::Entry(time).with_id(entities.len()));
             continue;
         }
 
@@ -262,8 +352,44 @@ fn statements_to_entities(stmts: Vec<Statement>) -> Vec<Entity> {
 
         if matches!(stmt, Statement::Break) {
             if let Some(blk) = curblock {
-                entities.push(Entity::Block(BlockData::Text(blk)));
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
                 curblock = None;
+            }
+
+            continue;
+        }
+
+        if let Statement::Command(cmd) = stmt {
+            let args = cmd.args;
+            if args.is_empty() {
+                continue;
+            }
+
+            if args[0] != "dz" {
+                // TODO: error handling
+                panic!("Unrecognized command: {}", args[0]);
+            }
+
+            if args.len() < 2 {
+                // TODO: error handling
+                panic!("Not enough args for dz");
+            }
+
+            // TODO: get ID
+            let last_entity_id = match entities.last() {
+                Some(entity) => entity.id(),
+                // TODO: error handling
+                None => panic!("No entity found"),
+            };
+
+            let con = connections.get_mut(&last_entity_id);
+
+            if let Some(con) = con {
+                con.push(args[1].clone());
+            } else {
+                connections.insert(last_entity_id, vec![args[1].clone()]);
             }
 
             continue;
@@ -271,9 +397,12 @@ fn statements_to_entities(stmts: Vec<Statement>) -> Vec<Entity> {
     }
     // Wrap up last block if it is the last thing
     if let Some(blk) = curblock {
-        entities.push(Entity::Block(BlockData::Text(blk)));
+        entities.push(Entity::Block(BlockData::Text(TextBlock::new(blk))));
     }
-    entities
+    EntityList {
+        entities,
+        connections,
+    }
 }
 
 #[allow(dead_code)]
@@ -382,7 +511,7 @@ struct Session {
 
 fn build_session_map(stmts: Vec<Statement>) -> SessionMap {
     let entities = statements_to_entities(stmts);
-    entities_to_session_map(entities)
+    entities_to_session_map(entities.entities)
 }
 
 #[allow(dead_code)]
@@ -407,6 +536,7 @@ fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
                         key: time,
                         title: edata.title,
                         tags: edata.tags,
+                        ..Default::default()
                     },
                     blocks: edata.blocks.into_iter().map(|b| b.into()).collect(),
                 })
@@ -827,6 +957,7 @@ mod tests {
                 key: time1.clone(),
                 title: "First task of the day".to_string(),
                 tags: vec!["timelog:00:15:00".to_string()],
+                ..Default::default()
             }),
             tl(TextLine {
                 text: "I am writing some words".to_string(),
@@ -838,6 +969,7 @@ mod tests {
                 key: time2.clone(),
                 title: "Brainstorming".to_string(),
                 tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+                ..Default::default()
             }),
             tl(TextLine {
                 text: "this is a thought I had".to_string(),
@@ -898,6 +1030,7 @@ mod tests {
                 key: time1.clone(),
                 title: "First task of the day".to_string(),
                 tags: vec!["timelog:00:15:00".to_string()],
+                ..Default::default()
             }),
             tl(TextLine {
                 text: "I am writing some words".to_string(),
@@ -909,6 +1042,7 @@ mod tests {
                 key: time2.clone(),
                 title: "Brainstorming".to_string(),
                 tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+                ..Default::default()
             }),
             tl(TextLine {
                 text: "this is a thought I had".to_string(),
@@ -925,6 +1059,77 @@ mod tests {
 
         let entities = statements_to_entities(document);
 
-        assert_eq!(entities.len(), 7);
+        assert_eq!(entities.entities.len(), 7);
+    }
+
+    #[test]
+    fn test_dz_full_paths() {
+        let dt = Statement::Date;
+        let tm = Statement::Time;
+        let tl = Statement::TextLine;
+        let br = Statement::Break;
+        let cmd = Statement::Command;
+        let time1 = TimeKey {
+            hour: 14,
+            minute: 1,
+        };
+        let time2 = TimeKey {
+            hour: 15,
+            minute: 30,
+        };
+        let document: Vec<Statement> = vec![
+            dt(Date::default()),
+            tm(Time {
+                key: time1.clone(),
+                title: "First task of the day".to_string(),
+                tags: vec!["timelog:00:15:00".to_string()],
+                ..Default::default()
+            }),
+            cmd(Command {
+                args: vec!["dz".to_string(), "a/b".to_string()],
+            }),
+            tl(TextLine {
+                text: "I am writing some words".to_string(),
+            }),
+            tl(TextLine {
+                text: "and I am doing my task".to_string(),
+            }),
+            tm(Time {
+                key: time2.clone(),
+                title: "Brainstorming".to_string(),
+                tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+                ..Default::default()
+            }),
+            cmd(Command {
+                args: vec!["dz".to_string(), "g/h".to_string()],
+            }),
+            tl(TextLine {
+                text: "this is a thought I had".to_string(),
+            }),
+            br.clone(),
+            cmd(Command {
+                args: vec!["dz".to_string(), "c/d".to_string()],
+            }),
+            cmd(Command {
+                args: vec!["dz".to_string(), "e/f".to_string()],
+            }),
+            tl(TextLine {
+                text: "this is a another thought I had".to_string(),
+            }),
+            br.clone(),
+            tl(TextLine {
+                text: "one more thought".to_string(),
+            }),
+        ];
+
+        let entities = statements_to_entities(document);
+        assert_eq!(entities.connections.len(), 3);
+
+        let mut total_connections = 0;
+        for (_, con) in entities.connections {
+            total_connections += con.len();
+        }
+
+        assert_eq!(total_connections, 4);
     }
 }

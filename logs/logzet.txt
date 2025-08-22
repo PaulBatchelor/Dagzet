@@ -494,3 +494,16 @@ access to the last item, and more granular control over
 what is being referenced.
 
 @14:29 initial attempt implementing the scaffolding #timelog:00:35:27
+
+@15:07 phew! finally, think about connection to dagzet nodes #timelog:01:07:16
+All entities need UUIDs.
+---
+Map the UUIDs to list of nodepaths.
+---
+The DZ command is processed with the entity list is being
+created.
+---
+All entities need to have an id now. Enforce this with
+traits.
+---
+WithId trait implemented. DZ commands should work for entries and blocks.
