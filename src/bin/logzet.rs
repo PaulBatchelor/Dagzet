@@ -488,6 +488,21 @@ struct Entry {
     blocks: Vec<Block>,
 }
 
+impl From<(TimeKey, EntryData)> for Entry {
+    fn from(value: (TimeKey, EntryData)) -> Entry {
+        let (time, data) = value;
+        Entry {
+            time: Time {
+                key: time,
+                title: data.title,
+                tags: data.tags,
+                ..Default::default()
+            },
+            blocks: data.blocks.into_iter().map(|b| b.into()).collect(),
+        }
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Default)]
 struct Session {
@@ -500,35 +515,25 @@ fn build_session_map(stmts: Vec<Statement>) -> SessionMap {
     entities_to_session_map(entities.entities)
 }
 
-#[allow(dead_code)]
-// TODO: error handling, plz read that rust for rustaceans chapter
-fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
-    let session_map = build_session_map(stmts);
-    // TODO: From traits
-    session_map
-        .into_iter()
-        .map(|(date, data)| Session {
+impl From<(DateKey, SessionData)> for Session {
+    fn from(value: (DateKey, SessionData)) -> Session {
+        let (date, data) = value;
+        Session {
             date: Date {
                 key: date,
                 title: data.title,
                 tags: data.tags,
             },
-            // TODO: From traits
-            entries: data
-                .entries
-                .into_iter()
-                .map(|(time, edata)| Entry {
-                    time: Time {
-                        key: time,
-                        title: edata.title,
-                        tags: edata.tags,
-                        ..Default::default()
-                    },
-                    blocks: edata.blocks.into_iter().map(|b| b.into()).collect(),
-                })
-                .collect(),
-        })
-        .collect()
+            entries: data.entries.into_iter().map(|e| e.into()).collect(),
+        }
+    }
+}
+
+#[allow(dead_code)]
+// TODO: error handling, plz read that rust for rustaceans chapter
+fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
+    let session_map = build_session_map(stmts);
+    session_map.into_iter().map(|s| s.into()).collect()
 }
 
 /// Represents a row in a SQLite table, corresponding with the existing
@@ -568,7 +573,7 @@ struct BlockRow {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct LogConnectionsRow {
+struct EntityConnectionsRow {
     entity_id: EntityId,
     node: String,
 }
@@ -580,6 +585,7 @@ struct SessionRows {
     dayblurb: SessionRow,
     blocks: Vec<BlockRow>,
     entities: Vec<EntityRow>,
+    connections: Vec<EntityConnectionsRow>,
 }
 
 #[allow(dead_code)]
@@ -688,6 +694,7 @@ impl From<Session> for SessionRows {
             logs,
             blocks,
             entities,
+            ..Default::default()
         }
     }
 }
