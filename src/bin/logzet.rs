@@ -529,6 +529,22 @@ impl From<(DateKey, SessionData)> for Session {
     }
 }
 
+enum EntityReference<'a> {
+    Session(&'a Session),
+    Entry(&'a Entry),
+    Block(&'a Block),
+}
+
+struct EntityConnections<'a> {
+    entity: EntityReference<'a>,
+    connections: Vec<String>,
+}
+
+struct SessionList<'a> {
+    session: Vec<Session>,
+    connections: Vec<EntityConnections<'a>>,
+}
+
 #[allow(dead_code)]
 // TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {

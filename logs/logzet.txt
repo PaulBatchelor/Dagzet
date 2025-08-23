@@ -612,3 +612,31 @@ Not terribly important for now, but maybe food for thought later.
 Entries UUIDs work for Sessions, Entries, and Blocks. Seeing
 how they look in the tests, it actually looks pretty clean.
 I think this is going to be a very helpful format.
+
+@21:06 Configuring the connection table is next #timelog:00:40:20
+I added connection rows to SessionRows, but Session
+doesn't have the information for connections? Where
+am I storing that information?
+---
+Ah. It's in the entity list. I have not yet decided on how
+to get these connections exposed to the Session. Entity IDs
+get erased currently.
+---
+You can make From traits for tuples? Okay that's sick. I can
+use that to make a Session from a SessionMap and a DateKey.
+---
+The from traits make the whole SessionMap -> Session much
+easier to read.
+---
+Oh, I see some complications. If you can connect a node to
+the entire session (this is technically possible), you can't
+exactly put the connection list inside of a Session as a child.
+It needs to exist alongside the Session, so it lives alongside
+the session list.
+---
+So, I got a few structs up. Basically, I want to see if it's possible
+to store the list of sessions, and then a list of connections with
+a pointer to the entity it belongs to (which could exist in any
+of the sessions).
+---
+Okay, gotta stop. Bed now.
