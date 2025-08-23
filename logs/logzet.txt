@@ -553,3 +553,38 @@ have 4095 blocks associated with it when position
 is encoded in base16 (12-bit number). So, this
 might be a perfectly reasonable persistent UUID.
 
+@19:39 More Log UUID thoughts #timelog:00:19:44
+Rearticulating the idea.
+---
+A set of logs are made up of smaller components called entities.
+---
+Entities connect to eachother in a way that forms a hierarchy
+between "Sessions" (a day), "Entries" (times of day), and
+"Blocks" (text content that is associated with an entry).
+---
+Entities can also be connected to dagzet nodes.
+---
+Different entities have different kind of metadata. In SQL,
+the data for the entities gets broken up into tables.
+---
+These metadata tables need to be able to know which entity
+it belongs to. In Dagzet, tables are linked together with
+foreign ids, which point back to a master node list.
+---
+To mirror the dagzet pattern there would need to be an entity
+list. Each entity gets an auto assigned row id, as well as
+a unique identifier. This row id is what is actually used
+as the id (integers are smaller, faster than strings).
+The SQLite queries generated use this unique identifier to
+look up what the row id is.
+---
+Thinking the format of this UUID should be YYYY-MM-DD?(-CONTEXT1)/HH-MM?(-CONTEXT2)/POS.
+It follws the same path logic as the dagzet nodes. Sessions would only
+get the first part of the path, entries would get the first 2 parts,
+and blocks would get all three parts.
+---
+Note that UUID is only required for the SQLite table.
+It's not necessary for the intermediate logic. local IDs work just fine.
+
+@19:59 fix up broken test #timelog:00:04:22
+I'm changing SessionRows and LogRow.

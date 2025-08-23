@@ -207,20 +207,6 @@ enum Block {
     PreText(String),
 }
 
-fn blocks_to_string(value: Vec<Block>) -> String {
-    // TODO: handle pretext blocks
-    let string_blocks: Vec<_> = value
-        .into_iter()
-        .map(|b| match b {
-            Block::Text(s) => s,
-            _ => unimplemented!("PreText blocks not yet implemented"),
-        })
-        .collect();
-    // NOTE: it would be better if the data model could actually support blocks instead
-    // of joining them into one string
-    string_blocks.join("\n---\n")
-}
-
 #[derive(Default)]
 struct TextBlock {
     uuid: EntityId,
@@ -593,13 +579,21 @@ struct SessionRows {
     logs: Vec<LogRow>,
     dayblurb: DayBlurbRow,
     blocks: Vec<BlockRow>,
+    entities: Vec<EntityRow>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct EntityRowId {
+    date: Option<DateKey>,
+    time: Option<TimeKey>,
+    position: Option<usize>,
 }
 
 #[allow(dead_code)]
 #[derive(Default)]
 struct EntityRow {
-    entity_id: EntityId,
-    entity_type: String,
+    uuid: EntityRowId,
 }
 
 impl From<Session> for SessionRows {
@@ -630,11 +624,13 @@ impl From<Session> for SessionRows {
             .collect();
 
         let blocks = Vec::new();
+        let entities = Vec::new();
 
         SessionRows {
             dayblurb,
             logs,
             blocks,
+            entities,
         }
     }
 }
@@ -886,16 +882,14 @@ mod tests {
         hour: u8,
         minute: u8,
         title: String,
-        body: String,
     }
 
     impl TestEntry {
-        fn new(hour: u8, minute: u8, title: &str, body: &str) -> Self {
+        fn new(hour: u8, minute: u8, title: &str) -> Self {
             Self {
                 hour,
                 minute,
                 title: title.to_string(),
-                body: body.to_string(),
             }
         }
     }
@@ -910,7 +904,7 @@ mod tests {
                 title: val.title.clone(),
                 ..Default::default()
             };
-            let blocks = vec![Block::Text(val.body.clone())];
+            let blocks = vec![];
             Entry { time, blocks }
         }
     }
@@ -921,14 +915,11 @@ mod tests {
             let hour = str::parse::<u8>(parts[0]).unwrap();
             let minute = str::parse::<u8>(parts[1]).unwrap();
             let title = val.title.clone();
-            //let body = val.comment.clone();
-            let body = String::new();
 
             TestEntry {
                 hour,
                 minute,
                 title,
-                body,
             }
         }
     }
@@ -936,9 +927,9 @@ mod tests {
     #[test]
     fn test_session_rows() {
         let entry_data: Vec<TestEntry> = vec![
-            TestEntry::new(10, 30, "entry A", "This is test entry A"),
-            TestEntry::new(14, 30, "entry B", "Writing an entry for B"),
-            TestEntry::new(15, 55, "entry C", "Third entry."),
+            TestEntry::new(10, 30, "entry A"),
+            TestEntry::new(14, 30, "entry B"),
+            TestEntry::new(15, 55, "entry C"),
         ];
         let date = Date {
             key: DateKey {
