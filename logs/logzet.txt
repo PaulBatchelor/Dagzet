@@ -588,3 +588,27 @@ It's not necessary for the intermediate logic. local IDs work just fine.
 
 @19:59 fix up broken test #timelog:00:04:22
 I'm changing SessionRows and LogRow.
+
+@20:05 Entity UUIDs for SessionRows #timelog:00:59:20
+SessionRows are made from a Session, and the
+conversion happens via a From trait.
+---
+Renaming structs to be more consistent with
+my terminology. Previously, I was trying to work
+towards an existing schema I was working with. Now,
+I think it's more worthwhile to just start over.
+This will be better, and it's worth the burn.
+The SQLite databases are temporary. The source of truth
+are the logs, and those will still work.
+---
+focusing on getting the entity UUIDs right now.
+---
+Entity UUIDs work as expected for Sessions and entries. Now I need
+to extend it for blocks.
+---
+Can we make RowEntries embed RowBlocks. What's to stop us from doing that?
+Not terribly important for now, but maybe food for thought later.
+---
+Entries UUIDs work for Sessions, Entries, and Blocks. Seeing
+how they look in the tests, it actually looks pretty clean.
+I think this is going to be a very helpful format.
