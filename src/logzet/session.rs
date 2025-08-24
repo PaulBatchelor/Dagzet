@@ -1,12 +1,12 @@
 use crate::logzet::{
     entity::EntityList, id::WithId, BlockData, Date, DateKey, Entry, EntryData, InsertBlock,
-    InsertEntry, Session, SessionData, SessionMap, Time, TimeKey,
+    InsertEntry, Session, SessionData, SessionInfo, SessionMap, Time, TimeKey,
 };
 
 use crate::logzet::entity::Entity;
 use std::collections::BTreeMap;
 
-type DefaultSession = SessionData<EntryData<BlockData>>;
+type DefaultSession = SessionData<EntryData<BlockData>, SessionInfo>;
 
 #[derive(Default)]
 struct SessionBuilder<T> {
@@ -117,17 +117,17 @@ pub fn build_session_map(entities: EntityList) -> BTreeMap<DateKey, DefaultSessi
     entities_to_session_map(entities.entities)
 }
 
-impl<T> From<(DateKey, SessionData<T>)> for Session
+impl<T> From<(DateKey, SessionData<T, SessionInfo>)> for Session
 where
     Entry: From<(TimeKey, T)>,
 {
-    fn from(value: (DateKey, SessionData<T>)) -> Session {
+    fn from(value: (DateKey, SessionData<T, SessionInfo>)) -> Session {
         let (date, data) = value;
         Session {
             date: Date {
                 key: date,
-                title: data.title,
-                tags: data.tags,
+                title: data.data.title,
+                tags: data.data.tags,
             },
             entries: data.entries.inner.into_iter().map(|e| e.into()).collect(),
         }

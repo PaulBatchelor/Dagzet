@@ -204,17 +204,23 @@ impl<T> SessionMap<T> {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct SessionData<T> {
-    entries: EntryMap<T>,
+struct SessionInfo {
     title: String,
     tags: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct SessionData<T, S> {
+    entries: EntryMap<T>,
+    data: S,
 }
 
 trait InsertEntry<'a> {
     fn insert_entry(&mut self, id: usize, time: &'a Time);
 }
 
-impl<'a, T> InsertEntry<'a> for SessionData<T>
+impl<'a, T> InsertEntry<'a> for SessionData<T, SessionInfo>
 where
     T: WithId<Id = usize> + From<&'a Time>,
 {
@@ -227,7 +233,7 @@ trait InsertBlock {
     fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData);
 }
 
-impl<T> InsertBlock for SessionData<T>
+impl<T> InsertBlock for SessionData<T, SessionInfo>
 where
     T: AppendBlock,
 {
@@ -236,11 +242,13 @@ where
     }
 }
 
-impl<T> From<&Date> for SessionData<T> {
-    fn from(date: &Date) -> SessionData<T> {
+impl<T> From<&Date> for SessionData<T, SessionInfo> {
+    fn from(date: &Date) -> SessionData<T, SessionInfo> {
         SessionData {
-            title: date.title.clone(),
-            tags: date.tags.clone(),
+            data: SessionInfo {
+                title: date.title.clone(),
+                tags: date.tags.clone(),
+            },
             entries: EntryMap::new(),
         }
     }
