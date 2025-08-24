@@ -1,23 +1,26 @@
 use crate::logzet::{
-    entity::EntityList, id::WithId, BlockData, Date, DateKey, Entry, EntryData, Session,
-    SessionData, SessionMap, Time, TimeKey,
+    entity::EntityList, id::WithId, BlockData, Date, DateKey, Entry, EntryData, InsertBlock,
+    InsertEntry, Session, SessionData, SessionMap, Time, TimeKey,
 };
 
 use crate::logzet::entity::Entity;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
-type DefaultSession = SessionData<EntryData<BlockData>, BlockData>;
+type DefaultSession = SessionData<EntryData<BlockData>>;
 
 #[derive(Default)]
 struct SessionBuilder<T> {
-    session_map: SessionMap<DefaultSession>,
+    session_map: SessionMap<T>,
     current_session: Option<DateKey>,
     current_entry: Option<TimeKey>,
     phantom: PhantomData<T>,
 }
 
-impl<T> SessionBuilder<T> {
+impl<T> SessionBuilder<T>
+where
+    T: InsertBlock + InsertEntry + WithId<Id = usize> + From<Date>,
+{
     fn new() -> Self {
         SessionBuilder {
             phantom: PhantomData,
@@ -27,7 +30,7 @@ impl<T> SessionBuilder<T> {
         }
     }
 
-    fn build(self) -> BTreeMap<DateKey, DefaultSession> {
+    fn build(self) -> BTreeMap<DateKey, T> {
         self.session_map.inner
     }
 
@@ -39,9 +42,9 @@ impl<T> SessionBuilder<T> {
 
     fn insert_entry(&mut self, id: usize, time: Time) {
         if let Some(session_key) = &self.current_session {
-            if let Some(session) = self.session_map.inner.get_mut(session_key) {
+            if let Some(session) = self.session_map.get_session(session_key) {
                 let time_key = time.key.clone();
-                session.entries.insert(id, time);
+                session.insert_entry(id, time);
                 self.current_entry = Some(time_key);
             }
         } else {
@@ -69,7 +72,7 @@ impl<T> SessionBuilder<T> {
             _ => panic!("session not found"),
         };
 
-        session.entries.append_block(entry_key, block.with_id(id));
+        session.insert_block(entry_key, block.with_id(id));
     }
 
     fn process(mut self, entities: Vec<Entity>) -> Self {
@@ -117,11 +120,11 @@ pub fn build_session_map(entities: EntityList) -> BTreeMap<DateKey, DefaultSessi
     entities_to_session_map(entities.entities)
 }
 
-impl<T> From<(DateKey, SessionData<T, BlockData>)> for Session
+impl<T> From<(DateKey, SessionData<T>)> for Session
 where
     Entry: From<(TimeKey, T)>,
 {
-    fn from(value: (DateKey, SessionData<T, BlockData>)) -> Session {
+    fn from(value: (DateKey, SessionData<T>)) -> Session {
         let (date, data) = value;
         Session {
             date: Date {

@@ -58,7 +58,7 @@ impl WithId for Entity {
     }
 }
 
-impl<T> WithId for SessionData<T, BlockData> {
+impl<T> WithId for SessionData<T> {
     type Id = EntityId;
     fn id(&self) -> Self::Id {
         0

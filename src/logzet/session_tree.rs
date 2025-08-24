@@ -1,6 +1,6 @@
 use super::{
     entity::{BlockIndex, EntryIndex, SessionIndex},
-    AppendBlock,
+    AppendBlock, BlockData, WithId,
 };
 
 #[allow(dead_code)]
@@ -9,9 +9,9 @@ pub struct EntryNode {
     blocks: Vec<BlockIndex>,
 }
 
-impl AppendBlock<BlockIndex> for EntryNode {
-    fn append_block(&mut self, block: BlockIndex) {
-        self.blocks.push(block);
+impl AppendBlock for EntryNode {
+    fn append_block(&mut self, block: BlockData) {
+        self.blocks.push(BlockIndex(block.id()));
     }
 }
 

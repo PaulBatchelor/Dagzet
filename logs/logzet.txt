@@ -824,3 +824,32 @@ Things need to bubble up more. Blocks need to be inserted
 from entries, entries need to be inserted from sessions.
 ---
 Well, that's all the time we have for now. Damn.
+
+@16:38 some traits built on SessionData #timelog:00:31:17
+I managed to get insert_entry as a method in the SessionData
+struct. But, I think this is going to need to be a trait.
+---
+Oh my god. This trait issue that was grinding me was a really
+easy fix. I was just putting the "where" syntax in the wrong place.
+---
+Now, do the same for appending a block. Make it a method,
+for SessionData then a trait implemented for SessionData.
+
+@17:10 Yet another attempt at generiszing the top-level SessionBuilder
+ADD 15
+---
+Let's see what breaks. Hopefully it's a bit less.
+---
+insert block behavior requires another trait parameter,
+can that be removed?
+---
+It doesn't look like it. BlockData needs to be an actual argument
+passed in at the top-level interface.
+---
+Still pain points with From<Time>.
+---
+Actually, the pain point is with BlockData. Isn't it always going
+to be BlockData? That comes directly from the entity list. I don't
+need to make a separate trait for it.
+---
+I think we did it? I think it's generic?

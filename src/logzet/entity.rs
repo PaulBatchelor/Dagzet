@@ -23,7 +23,7 @@ pub struct EntityList {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BlockIndex(usize);
+pub struct BlockIndex(pub usize);
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

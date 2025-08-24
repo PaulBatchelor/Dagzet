@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, marker::PhantomData};
+use std::collections::BTreeMap;
 mod entity;
 mod id;
 mod rows;
@@ -112,11 +112,11 @@ struct EntryData<T> {
     blocks: Vec<T>,
 }
 
-trait AppendBlock<T> {
-    fn append_block(&mut self, block: T);
+trait AppendBlock {
+    fn append_block(&mut self, block: BlockData);
 }
 
-impl AppendBlock<BlockData> for EntryData<BlockData> {
+impl AppendBlock for EntryData<BlockData> {
     fn append_block(&mut self, block: BlockData) {
         self.blocks.push(block)
     }
@@ -134,17 +134,15 @@ impl From<Time> for EntryData<BlockData> {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct EntryMap<T, B> {
+struct EntryMap<T> {
     inner: BTreeMap<TimeKey, T>,
-    phantom: PhantomData<B>,
 }
 
 #[allow(dead_code)]
-impl<T, B> EntryMap<T, B> {
+impl<T> EntryMap<T> {
     fn new() -> Self {
         EntryMap {
             inner: BTreeMap::new(),
-            phantom: PhantomData,
         }
     }
 
@@ -161,9 +159,9 @@ impl<T, B> EntryMap<T, B> {
         self.inner.get_mut(entry_key)
     }
 
-    fn append_block(&mut self, entry_key: &TimeKey, block: B)
+    fn append_block(&mut self, entry_key: &TimeKey, block: BlockData)
     where
-        T: AppendBlock<B>,
+        T: AppendBlock,
     {
         let entry = match self.get_entry(entry_key) {
             Some(data) => data,
@@ -205,14 +203,40 @@ impl<T> SessionMap<T> {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct SessionData<T, B> {
-    entries: EntryMap<T, B>,
+struct SessionData<T> {
+    entries: EntryMap<T>,
     title: String,
     tags: Vec<String>,
 }
 
-impl<T> From<Date> for SessionData<T, BlockData> {
-    fn from(date: Date) -> SessionData<T, BlockData> {
+trait InsertEntry {
+    fn insert_entry(&mut self, id: usize, time: Time);
+}
+
+impl<T> InsertEntry for SessionData<T>
+where
+    T: WithId<Id = usize> + From<Time>,
+{
+    fn insert_entry(&mut self, id: usize, time: Time) {
+        self.entries.insert(id, time);
+    }
+}
+
+trait InsertBlock {
+    fn insert_block(&mut self, entry_key: &TimeKey, block: BlockData);
+}
+
+impl<T> InsertBlock for SessionData<T>
+where
+    T: AppendBlock,
+{
+    fn insert_block(&mut self, entry_key: &TimeKey, block: BlockData) {
+        self.entries.append_block(entry_key, block);
+    }
+}
+
+impl<T> From<Date> for SessionData<T> {
+    fn from(date: Date) -> SessionData<T> {
         SessionData {
             title: date.title,
             tags: date.tags,
