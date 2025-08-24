@@ -640,3 +640,58 @@ a pointer to the entity it belongs to (which could exist in any
 of the sessions).
 ---
 Okay, gotta stop. Bed now.
+
+@2025-08-23#logzet Brookln, PLG
+A day at the Met. Now, I am post dinner, post dessert, and
+post late afternoon caffeinated. Let's see what I can do today.
+
+@19:02 initial attempt at building out a connections list #timelog:00:52:41
+There *is* a connections list. It is contained in the
+EntityList. It is a map that ties entity id to a list
+of dznode paths (strings). I would like to turn this
+into a list of things with the dz node path and
+the direct reference to that thing.
+---
+References are hard. I'm going to try a small test.
+Can I locally populate a list of references of a particular
+type? And if so, can I create a function that generates that
+list from a session map?
+---
+Think I might be just stroking Rust the wrong way. I'm already
+running into issues.
+---
+Claude seems to think I can use hash_map.values().collect()
+to make read-only list of referenced values. Let's see if that
+actually works.
+---
+It works! A little clue. But, this is tricky because the items
+are nested, so only the sessions appear. We need a flat list.
+
+@19:56 I think I may need a new Session Tree structure #timelog:00:24:25
+Basically, the session tree can only made up of references from
+the entity list. Maybe just have things made up of indices
+from the entity list.
+---
+Okay. This is the new plan. logzet stuff needs to get moved out of the binary
+and broken up into individual files. It is time. I think this code
+is officially hard to work through in one place.
+
+@20:23 clean up logzet, put it in a module in the library #timelog:00:49:35
+also split up the module into different components
+---
+I have created a lib.rs file with the logzet stuff as a module, and
+that file is being used in the binary called logzet.
+---
+now to move things.
+---
+statement.rs
+---
+entity.rs
+---
+session.rs: WAY too many imports. clearly need to abstract this
+one better. Probably should pull some of this into the top-level
+mod.rs function.
+---
+rows.rs
+---
+id.rs
