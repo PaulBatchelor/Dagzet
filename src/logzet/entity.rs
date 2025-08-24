@@ -1,5 +1,6 @@
+use crate::logzet::id::WithId;
 use crate::logzet::statement::Statement;
-use crate::logzet::{BlockData, Date, TextBlock, Time, WithId};
+use crate::logzet::{BlockData, Date, TextBlock, Time};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -18,24 +19,6 @@ pub enum Entity {
 pub struct EntityList {
     pub entities: Vec<Entity>,
     pub connections: HashMap<EntityId, DagzetPathList>,
-}
-
-impl WithId for Entity {
-    type Id = EntityId;
-    fn id(&self) -> Self::Id {
-        match self {
-            Entity::Block(block) => block.id(),
-            Entity::Entry(entry) => entry.id(),
-            Entity::Session(_session) => unimplemented!(),
-        }
-    }
-    fn with_id(self, id: Self::Id) -> Self {
-        match self {
-            Entity::Block(block) => Entity::Block(block.with_id(id)),
-            Entity::Entry(entry) => Entity::Entry(entry.with_id(id)),
-            Entity::Session(ref _session) => self,
-        }
-    }
 }
 
 #[allow(dead_code)]

@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 mod entity;
+mod id;
 mod rows;
 mod session;
 mod statement;
@@ -44,19 +45,6 @@ struct Time {
     key: TimeKey,
     title: String,
     tags: Vec<String>,
-}
-
-impl WithId for Time {
-    type Id = EntityId;
-
-    fn id(&self) -> Self::Id {
-        self.id
-    }
-
-    fn with_id(mut self, id: Self::Id) -> Self {
-        self.id = id;
-        self
-    }
 }
 
 /// A single line of text
@@ -105,32 +93,6 @@ impl From<BlockData> for Block {
             BlockData::Text(lines) => Block::Text(lines.lines.join(" ")),
         }
     }
-}
-
-impl WithId for BlockData {
-    type Id = EntityId;
-
-    fn id(&self) -> Self::Id {
-        match self {
-            BlockData::Text(text) => text.uuid,
-        }
-    }
-
-    fn with_id(self, id: Self::Id) -> Self {
-        match self {
-            BlockData::Text(mut text) => {
-                text.uuid = id;
-                BlockData::Text(text)
-            }
-        }
-    }
-}
-
-#[allow(dead_code)]
-trait WithId {
-    type Id;
-    fn id(&self) -> Self::Id;
-    fn with_id(self, id: Self::Id) -> Self;
 }
 
 #[allow(dead_code)]
