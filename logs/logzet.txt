@@ -816,3 +816,11 @@ make life better or worse?
 Got a generic partially working for EntryMap. Should
 be fully generic for EntryMap downwards, hardcoded to
 BlockData for SessionMap.
+
+@13:24 back to trying to make it generic from top-level #timelog:00:15:00
+Let's see what breaks
+---
+Things need to bubble up more. Blocks need to be inserted
+from entries, entries need to be inserted from sessions.
+---
+Well, that's all the time we have for now. Damn.
