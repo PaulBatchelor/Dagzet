@@ -71,7 +71,7 @@ enum Block {
     PreText(String),
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct TextBlock {
     uuid: EntityId,
     lines: Vec<String>,
@@ -86,6 +86,7 @@ impl TextBlock {
     }
 }
 
+#[derive(Clone)]
 enum BlockData {
     Text(TextBlock),
 }
@@ -113,20 +114,20 @@ struct EntryData<T> {
 }
 
 trait AppendBlock {
-    fn append_block(&mut self, block: BlockData);
+    fn append_block(&mut self, block: &BlockData);
 }
 
 impl AppendBlock for EntryData<BlockData> {
-    fn append_block(&mut self, block: BlockData) {
-        self.blocks.push(block)
+    fn append_block(&mut self, block: &BlockData) {
+        self.blocks.push(block.clone())
     }
 }
 
-impl From<Time> for EntryData<BlockData> {
-    fn from(time: Time) -> EntryData<BlockData> {
+impl From<&Time> for EntryData<BlockData> {
+    fn from(time: &Time) -> EntryData<BlockData> {
         EntryData {
-            title: time.title,
-            tags: time.tags,
+            title: time.title.clone(),
+            tags: time.tags.clone(),
             blocks: vec![],
         }
     }
@@ -146,9 +147,9 @@ impl<T> EntryMap<T> {
         }
     }
 
-    fn insert(&mut self, id: usize, time: Time)
+    fn insert<'a>(&mut self, id: usize, time: &'a Time)
     where
-        T: From<Time> + WithId<Id = usize>,
+        T: From<&'a Time> + WithId<Id = usize>,
     {
         let time_key = time.key.clone();
         let data: T = time.into();
@@ -159,7 +160,7 @@ impl<T> EntryMap<T> {
         self.inner.get_mut(entry_key)
     }
 
-    fn append_block(&mut self, entry_key: &TimeKey, block: BlockData)
+    fn append_block(&mut self, entry_key: &TimeKey, block: &BlockData)
     where
         T: AppendBlock,
     {
@@ -187,9 +188,9 @@ impl<T> SessionMap<T> {
         }
     }
 
-    fn insert(&mut self, id: usize, date: Date)
+    fn insert<'a>(&mut self, id: usize, date: &'a Date)
     where
-        T: From<Date> + WithId<Id = usize>,
+        T: From<&'a Date> + WithId<Id = usize>,
     {
         let date_key = date.key.clone();
         let data: T = date.into();
@@ -209,37 +210,37 @@ struct SessionData<T> {
     tags: Vec<String>,
 }
 
-trait InsertEntry {
-    fn insert_entry(&mut self, id: usize, time: Time);
+trait InsertEntry<'a> {
+    fn insert_entry(&mut self, id: usize, time: &'a Time);
 }
 
-impl<T> InsertEntry for SessionData<T>
+impl<'a, T> InsertEntry<'a> for SessionData<T>
 where
-    T: WithId<Id = usize> + From<Time>,
+    T: WithId<Id = usize> + From<&'a Time>,
 {
-    fn insert_entry(&mut self, id: usize, time: Time) {
+    fn insert_entry(&mut self, id: usize, time: &'a Time) {
         self.entries.insert(id, time);
     }
 }
 
 trait InsertBlock {
-    fn insert_block(&mut self, entry_key: &TimeKey, block: BlockData);
+    fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData);
 }
 
 impl<T> InsertBlock for SessionData<T>
 where
     T: AppendBlock,
 {
-    fn insert_block(&mut self, entry_key: &TimeKey, block: BlockData) {
+    fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData) {
         self.entries.append_block(entry_key, block);
     }
 }
 
-impl<T> From<Date> for SessionData<T> {
-    fn from(date: Date) -> SessionData<T> {
+impl<T> From<&Date> for SessionData<T> {
+    fn from(date: &Date) -> SessionData<T> {
         SessionData {
-            title: date.title,
-            tags: date.tags,
+            title: date.title.clone(),
+            tags: date.tags.clone(),
             entries: EntryMap::new(),
         }
     }

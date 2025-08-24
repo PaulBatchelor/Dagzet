@@ -10,7 +10,7 @@ pub struct EntryNode {
 }
 
 impl AppendBlock for EntryNode {
-    fn append_block(&mut self, block: BlockData) {
+    fn append_block(&mut self, block: &BlockData) {
         self.blocks.push(BlockIndex(block.id()));
     }
 }

@@ -835,9 +835,7 @@ easy fix. I was just putting the "where" syntax in the wrong place.
 Now, do the same for appending a block. Make it a method,
 for SessionData then a trait implemented for SessionData.
 
-@17:10 Yet another attempt at generiszing the top-level SessionBuilder
-ADD 15
----
+@17:10 Yet another attempt at generiszing the top-level SessionBuilder #timelog:00:48:35
 Let's see what breaks. Hopefully it's a bit less.
 ---
 insert block behavior requires another trait parameter,
@@ -853,3 +851,15 @@ to be BlockData? That comes directly from the entity list. I don't
 need to make a separate trait for it.
 ---
 I think we did it? I think it's generic?
+
+@17:57 entity list needs to be preserved. fix to make parser pass by reference instead of value #timelog:00:59:04
+Sigh. This might actually be a wrinkle.
+---
+Let's see if I can get the "Date" to work with pass by reference.
+---
+Ran into lifetime annotation bugs which were weird because I was only
+passing by reference. Actually, I was passing by value in the top-level
+iterator and passing that value by reference, which was causing the value
+to drop.
+---
+it's a little more copying now, but I think it works.

@@ -17,9 +17,9 @@ struct SessionBuilder<T> {
     phantom: PhantomData<T>,
 }
 
-impl<T> SessionBuilder<T>
+impl<'a, T> SessionBuilder<T>
 where
-    T: InsertBlock + InsertEntry + WithId<Id = usize> + From<Date>,
+    T: InsertBlock + InsertEntry<'a> + WithId<Id = usize> + From<&'a Date>,
 {
     fn new() -> Self {
         SessionBuilder {
@@ -34,13 +34,13 @@ where
         self.session_map.inner
     }
 
-    fn insert_session(&mut self, id: usize, date: Date) {
+    fn insert_session(&mut self, id: usize, date: &'a Date) {
         let date_key = date.key.clone();
         self.session_map.insert(id, date);
         self.current_session = Some(date_key);
     }
 
-    fn insert_entry(&mut self, id: usize, time: Time) {
+    fn insert_entry(&mut self, id: usize, time: &'a Time) {
         if let Some(session_key) = &self.current_session {
             if let Some(session) = self.session_map.get_session(session_key) {
                 let time_key = time.key.clone();
@@ -53,7 +53,7 @@ where
         }
     }
 
-    fn insert_block(&mut self, id: usize, block: BlockData) {
+    fn insert_block(&mut self, block: &BlockData) {
         let session_key = match &self.current_session {
             Some(key) => key,
             // TODO: error handling
@@ -72,11 +72,11 @@ where
             _ => panic!("session not found"),
         };
 
-        session.insert_block(entry_key, block.with_id(id));
+        session.insert_block(entry_key, block);
     }
 
-    fn process(mut self, entities: Vec<Entity>) -> Self {
-        for (id, entity) in entities.into_iter().enumerate() {
+    fn process(mut self, entities: &'a [Entity]) -> Self {
+        for (id, entity) in entities.iter().enumerate() {
             match entity {
                 Entity::Session(date) => {
                     self.insert_session(id, date);
@@ -85,7 +85,7 @@ where
                     self.insert_entry(id, time);
                 }
                 Entity::Block(block) => {
-                    self.insert_block(id, block);
+                    self.insert_block(block);
                 }
             }
         }
@@ -97,7 +97,7 @@ where
 #[allow(dead_code)]
 pub fn entities_to_session_map(entities: Vec<Entity>) -> BTreeMap<DateKey, DefaultSession> {
     SessionBuilder::<DefaultSession>::new()
-        .process(entities)
+        .process(&entities)
         .build()
 }
 
