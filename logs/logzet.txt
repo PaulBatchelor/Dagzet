@@ -711,7 +711,7 @@ just usize types. I want these indices to be typed
 so it's not just a bunch of usizes flying
 around.
 
-@2025-08-24 Brooklyn, PLG
+@2025-08-24#logzet Brooklyn, PLG
 @08:35 initial session tree scaffolding #timelog:00:29:05
 Going to need typed entity indices. ended up just
 making them struct tuples.
@@ -772,3 +772,47 @@ key stays the same, the value will change.
 Managed to barely make EntryData generic.
 ---
 Managed to barely make SessionData generic.
+
+@11:07 continuing with the refactor #timelog:00:48:16
+Going to bottoms-up Session Builder with generics.
+Make sure it can be generic over blocks, then entries,
+then sessions.
+---
+Okay, that wasn't great. Perhaps it wasn't the best idea
+to hop abstractions from BlockData to SessionMap. It
+should be completely encapsulated at this point anyways.
+---
+Going to stab it top down. Make SessionData an alias,
+then try to worm that into a generic.
+---
+Used a phantom data type to make the outer layer generic
+syntax work as expected. Had to remove the Default
+trait and replace it with an explicit new method,
+but that's okay.
+---
+Now, time to see what breaks when T is actually used.
+
+@12:00 failed again. maybe SessionBuilder needs better encapsulation? #timelog:00:15:00
+The methods here have leaky abstractions, which may be
+contributing to my poor attempts at refactoring.
+---
+Maybe use the "inner" pattern. wrap these BTreeMaps into structs,
+and add getter methods for those.
+---
+Well, certainly EntryMap for starters, working bottoms-up.
+---
+Okay, insert method for EntryMap feels like a nice win.
+
+@12:27 more inner encapsulation #timelog:00:45:53
+This block insertion business is drilling down too deep.
+---
+I still haven't figured out the block encapsulation yet,
+but I got session map encapsulated now. Eventually,
+block insertion will be encapsulated in an entry,
+entry insertion will be encapsulated in session. block
+insertion possible from the session maybe? does that
+make life better or worse?
+---
+Got a generic partially working for EntryMap. Should
+be fully generic for EntryMap downwards, hardcoded to
+BlockData for SessionMap.
