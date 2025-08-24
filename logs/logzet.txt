@@ -695,3 +695,18 @@ mod.rs function.
 rows.rs
 ---
 id.rs
+
+@21:54 What's next: the session as a tree of links #timelog:00:14:06
+A "Session" can be thought of a tree structure. A session
+is composed of Entries, and Entries are composed of Blocks.
+---
+Our current Session has these data items nested directly.
+However, this becomes tricky when any of these components
+can link to a list of nodes. So, the idea is to use the
+genertated EntityList more directly, and have the Session
+be composed of virtual pointers to this EntityList.
+---
+"virtual pointers" in Rust are just indices, which are
+just usize types. I want these indices to be typed
+so it's not just a bunch of usizes flying
+around.
