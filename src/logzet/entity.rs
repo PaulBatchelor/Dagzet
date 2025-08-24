@@ -1,4 +1,5 @@
-use crate::logzet::{BlockData, Date, Time};
+use crate::logzet::statement::Statement;
+use crate::logzet::{BlockData, Date, TextBlock, Time, WithId};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -17,4 +18,117 @@ pub enum Entity {
 pub struct EntityList {
     pub entities: Vec<Entity>,
     pub connections: HashMap<EntityId, DagzetPathList>,
+}
+
+impl WithId for Entity {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        match self {
+            Entity::Block(block) => block.id(),
+            Entity::Entry(entry) => entry.id(),
+            Entity::Session(_session) => unimplemented!(),
+        }
+    }
+    fn with_id(self, id: Self::Id) -> Self {
+        match self {
+            Entity::Block(block) => Entity::Block(block.with_id(id)),
+            Entity::Entry(entry) => Entity::Entry(entry.with_id(id)),
+            Entity::Session(ref _session) => self,
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
+    let mut entities = vec![];
+    let mut curblock: Option<Vec<String>> = None;
+    let mut connections: HashMap<EntityId, DagzetPathList> = HashMap::new();
+
+    for stmt in stmts {
+        if let Statement::Date(date) = stmt {
+            // A new session will implicitly end the current block, if there is one
+            if let Some(blk) = curblock {
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
+                curblock = None;
+            }
+            entities.push(Entity::Session(date).with_id(entities.len()));
+            continue;
+        }
+
+        if let Statement::Time(time) = stmt {
+            // A new entry will implicitly end the current block, if there is one
+            if let Some(blk) = curblock {
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
+                curblock = None;
+            }
+            entities.push(Entity::Entry(time).with_id(entities.len()));
+            continue;
+        }
+
+        if let Statement::TextLine(text) = stmt {
+            if let Some(ref mut blk) = curblock {
+                blk.push(text.text);
+            } else {
+                curblock = Some(vec![text.text]);
+            }
+            continue;
+        }
+
+        if matches!(stmt, Statement::Break) {
+            if let Some(blk) = curblock {
+                entities.push(
+                    Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()),
+                );
+                curblock = None;
+            }
+
+            continue;
+        }
+
+        if let Statement::Command(cmd) = stmt {
+            let args = cmd.args;
+            if args.is_empty() {
+                continue;
+            }
+
+            if args[0] != "dz" {
+                // TODO: error handling
+                panic!("Unrecognized command: {}", args[0]);
+            }
+
+            if args.len() < 2 {
+                // TODO: error handling
+                panic!("Not enough args for dz");
+            }
+
+            // TODO: get ID
+            let last_entity_id = match entities.last() {
+                Some(entity) => entity.id(),
+                // TODO: error handling
+                None => panic!("No entity found"),
+            };
+
+            let con = connections.get_mut(&last_entity_id);
+
+            if let Some(con) = con {
+                con.push(args[1].clone());
+            } else {
+                connections.insert(last_entity_id, vec![args[1].clone()]);
+            }
+
+            continue;
+        }
+    }
+    // Wrap up last block if it is the last thing
+    if let Some(blk) = curblock {
+        entities.push(Entity::Block(BlockData::Text(TextBlock::new(blk))));
+    }
+    EntityList {
+        entities,
+        connections,
+    }
 }
