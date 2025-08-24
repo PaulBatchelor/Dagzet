@@ -132,7 +132,8 @@ struct Session {
 #[allow(dead_code)]
 // TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
-    let session_map = build_session_map(stmts);
+    let entities = statements_to_entities(stmts);
+    let session_map = build_session_map(entities);
     session_map.into_iter().map(|s| s.into()).collect()
 }
 

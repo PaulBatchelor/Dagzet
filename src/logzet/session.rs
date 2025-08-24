@@ -1,6 +1,6 @@
 use crate::logzet::{
-    statements_to_entities, Date, DateKey, Entry, EntryData, EntryMap, Session, SessionData,
-    SessionMap, Statement, Time, TimeKey,
+    entity::EntityList, Date, DateKey, Entry, EntryData, EntryMap, Session, SessionData,
+    SessionMap, Time, TimeKey,
 };
 
 use crate::logzet::entity::Entity;
@@ -11,6 +11,7 @@ pub fn entities_to_session_map(entities: Vec<Entity>) -> SessionMap {
     let mut session_map = SessionMap::new();
     let mut current_session: Option<DateKey> = None;
     let mut current_entry: Option<TimeKey> = None;
+
     for entity in entities {
         match entity {
             Entity::Session(date) => {
@@ -89,8 +90,7 @@ impl From<(TimeKey, EntryData)> for Entry {
     }
 }
 
-pub fn build_session_map(stmts: Vec<Statement>) -> SessionMap {
-    let entities = statements_to_entities(stmts);
+pub fn build_session_map(entities: EntityList) -> SessionMap {
     entities_to_session_map(entities.entities)
 }
 
