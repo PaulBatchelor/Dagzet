@@ -5,7 +5,6 @@ use crate::logzet::{
 
 use crate::logzet::entity::Entity;
 use std::collections::BTreeMap;
-use std::marker::PhantomData;
 
 type DefaultSession = SessionData<EntryData<BlockData>>;
 
@@ -14,7 +13,6 @@ struct SessionBuilder<T> {
     session_map: SessionMap<T>,
     current_session: Option<DateKey>,
     current_entry: Option<TimeKey>,
-    phantom: PhantomData<T>,
 }
 
 impl<'a, T> SessionBuilder<T>
@@ -23,7 +21,6 @@ where
 {
     fn new() -> Self {
         SessionBuilder {
-            phantom: PhantomData,
             current_session: None,
             current_entry: None,
             session_map: SessionMap::new(),
