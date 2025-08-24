@@ -710,3 +710,65 @@ be composed of virtual pointers to this EntityList.
 just usize types. I want these indices to be typed
 so it's not just a bunch of usizes flying
 around.
+
+@2025-08-24 Brooklyn, PLG
+@08:35 initial session tree scaffolding #timelog:00:29:05
+Going to need typed entity indices. ended up just
+making them struct tuples.
+---
+Added some getters that take in these typed indices
+---
+fleshing out the session tree struct. This is going
+to look a lot like our current session struct, but
+with references.
+---
+Thing I'm going to make a SessionMapBuilder, that
+can be generic over either a SessionMap or a SessionTreeMap.
+
+@09:05 Session builder? #timelog:01:53:18
+I started coding too quickly. Resetting.
+---
+Initial SessionBuilder created, no generics.
+---
+Thinking through how to make things more generic. Generic
+enough for the session tree
+---
+It's helpful to organize, I guess. It's helping me realize
+that this might be another dead end, or that I'm further
+from my refactoring goals than I expected. How are the indices
+going to get inserted?
+---
+in entities_to_session_map, the entity ID is the index in
+the entity list. So, when items are passed into the insert
+methods, the id should be passed in as well. This can
+be paired with the `with_id` trait I think. With the
+current session map stuff, this won't do anything. With
+the session tree, it will actually set the indice.
+---
+ID values have been introduced into the interface. ID data from
+the entity list gets proliferated into deeper the system, and if I'm
+thinking about it right, it should touch the parts where the actual
+tree nodes would be constructed.
+---
+I now need to direct my attention to traits again. Bottoms up.
+Deal with the smaller traits, encapsulate, then work upwards to
+the session builder.
+---
+The lowest level concern is the thing in charge of appending
+blocks to an entry. Some kind of method or trait called "append_block"?
+---
+Or, maybe, just maybe. EntryData is generic over a type?
+---
+EntryNode and EntryData are so close. But, I think it might
+rip up too many things to change EntryData.
+---
+Trying to top-down this thing and let the compiler tell
+me what needs to be finished.
+---
+My type aliases EntryMap and SessionMap need to go. They
+need to be broken down into the BTreeMap KV components. The
+key stays the same, the value will change.
+---
+Managed to barely make EntryData generic.
+---
+Managed to barely make SessionData generic.

@@ -22,6 +22,42 @@ pub struct EntityList {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BlockIndex(usize);
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EntryIndex(usize);
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SessionIndex(usize);
+
+#[allow(dead_code)]
+impl EntityList {
+    fn get_block(&self, index: BlockIndex) -> Option<&BlockData> {
+        if let Entity::Block(block) = &self.entities[index.0] {
+            return Some(block);
+        }
+        None
+    }
+
+    fn get_entry(&self, index: EntryIndex) -> Option<&Time> {
+        if let Entity::Entry(time) = &self.entities[index.0] {
+            return Some(time);
+        }
+        None
+    }
+
+    fn get_session(&self, index: SessionIndex) -> Option<&Date> {
+        if let Entity::Session(date) = &self.entities[index.0] {
+            return Some(date);
+        }
+        None
+    }
+}
+
+#[allow(dead_code)]
 pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     let mut entities = vec![];
     let mut curblock: Option<Vec<String>> = None;

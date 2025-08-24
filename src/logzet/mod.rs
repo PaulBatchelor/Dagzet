@@ -1,11 +1,14 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, marker::PhantomData};
 mod entity;
 mod id;
 mod rows;
 mod session;
+mod session_tree;
 mod statement;
 use entity::{statements_to_entities, EntityId};
+use id::WithId;
 use session::build_session_map;
+use session_tree::SessionNode;
 use statement::Statement;
 
 pub fn hello() {
@@ -87,6 +90,12 @@ enum BlockData {
     Text(TextBlock),
 }
 
+impl Default for BlockData {
+    fn default() -> BlockData {
+        BlockData::Text(TextBlock::default())
+    }
+}
+
 impl From<BlockData> for Block {
     fn from(value: BlockData) -> Block {
         match value {
@@ -96,24 +105,124 @@ impl From<BlockData> for Block {
 }
 
 #[allow(dead_code)]
-struct EntryData {
+#[derive(Default)]
+struct EntryData<T> {
     title: String,
     tags: Vec<String>,
-    blocks: Vec<BlockData>,
+    blocks: Vec<T>,
 }
 
-/// An intermediate structure used for sorting time entries for a day
-#[allow(dead_code)]
-type EntryMap = BTreeMap<TimeKey, EntryData>;
+trait AppendBlock<T> {
+    fn append_block(&mut self, block: T);
+}
+
+impl AppendBlock<BlockData> for EntryData<BlockData> {
+    fn append_block(&mut self, block: BlockData) {
+        self.blocks.push(block)
+    }
+}
+
+impl From<Time> for EntryData<BlockData> {
+    fn from(time: Time) -> EntryData<BlockData> {
+        EntryData {
+            title: time.title,
+            tags: time.tags,
+            blocks: vec![],
+        }
+    }
+}
 
 #[allow(dead_code)]
-struct SessionData {
-    entries: EntryMap,
+#[derive(Default)]
+struct EntryMap<T, B> {
+    inner: BTreeMap<TimeKey, T>,
+    phantom: PhantomData<B>,
+}
+
+#[allow(dead_code)]
+impl<T, B> EntryMap<T, B> {
+    fn new() -> Self {
+        EntryMap {
+            inner: BTreeMap::new(),
+            phantom: PhantomData,
+        }
+    }
+
+    fn insert(&mut self, id: usize, time: Time)
+    where
+        T: From<Time> + WithId<Id = usize>,
+    {
+        let time_key = time.key.clone();
+        let data: T = time.into();
+        self.inner.insert(time_key.clone(), data.with_id(id));
+    }
+
+    fn get_entry(&mut self, entry_key: &TimeKey) -> Option<&mut T> {
+        self.inner.get_mut(entry_key)
+    }
+
+    fn append_block(&mut self, entry_key: &TimeKey, block: B)
+    where
+        T: AppendBlock<B>,
+    {
+        let entry = match self.get_entry(entry_key) {
+            Some(data) => data,
+            // TODO: error handling
+            _ => panic!("entry not found"),
+        };
+
+        entry.append_block(block);
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct SessionMap<T> {
+    inner: BTreeMap<DateKey, T>,
+}
+
+#[allow(dead_code)]
+impl<T> SessionMap<T> {
+    fn new() -> Self {
+        SessionMap {
+            inner: BTreeMap::new(),
+        }
+    }
+
+    fn insert(&mut self, id: usize, date: Date)
+    where
+        T: From<Date> + WithId<Id = usize>,
+    {
+        let date_key = date.key.clone();
+        let data: T = date.into();
+        self.inner.insert(date_key, data.with_id(id));
+    }
+
+    fn get_session(&mut self, session_key: &DateKey) -> Option<&mut T> {
+        self.inner.get_mut(session_key)
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Default)]
+struct SessionData<T, B> {
+    entries: EntryMap<T, B>,
     title: String,
     tags: Vec<String>,
 }
+
+impl<T> From<Date> for SessionData<T, BlockData> {
+    fn from(date: Date) -> SessionData<T, BlockData> {
+        SessionData {
+            title: date.title,
+            tags: date.tags,
+            entries: EntryMap::new(),
+        }
+    }
+}
+
 #[allow(dead_code)]
-type SessionMap = BTreeMap<DateKey, SessionData>;
+type SessionTreeMap = BTreeMap<DateKey, SessionNode>;
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]

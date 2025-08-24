@@ -1,5 +1,5 @@
 use crate::logzet::entity::Entity;
-use crate::logzet::{BlockData, EntityId, Time};
+use crate::logzet::{BlockData, EntityId, EntryData, SessionData, Time};
 
 #[allow(dead_code)]
 pub trait WithId {
@@ -55,5 +55,25 @@ impl WithId for Entity {
             Entity::Entry(entry) => Entity::Entry(entry.with_id(id)),
             Entity::Session(ref _session) => self,
         }
+    }
+}
+
+impl<T> WithId for SessionData<T, BlockData> {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        0
+    }
+    fn with_id(self, _id: Self::Id) -> Self {
+        self
+    }
+}
+
+impl<T> WithId for EntryData<T> {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        0
+    }
+    fn with_id(self, _id: Self::Id) -> Self {
+        self
     }
 }
