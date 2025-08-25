@@ -137,3 +137,52 @@ fn title_and_tags(full_title: &str) -> (String, Vec<String>) {
 
     (title, tags)
 }
+
+#[allow(dead_code)]
+pub struct StatementBuilder {
+    statements: Vec<Statement>,
+}
+
+#[allow(dead_code)]
+impl StatementBuilder {
+    pub fn new() -> Self {
+        StatementBuilder { statements: vec![] }
+    }
+
+    pub fn parse(&mut self, line: String) {
+        if line.is_empty() {
+            return;
+        }
+        if let Ok(stmt) = line.try_into() {
+            self.statements.push(stmt);
+        }
+    }
+
+    pub fn build(self) -> Vec<Statement> {
+        self.statements
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_statement_buidler() {
+        let lines = [
+            "@2025-08-20 Testing the statement builder",
+            "@19:51 Initial unit test",
+            "I'm trying to build a little intermediate thing",
+            "to handle the small bits of state and preprocessing",
+            "",
+            "involved.",
+            "",
+            "For example, line breaks are ignored entirely.",
+        ];
+
+        let mut builder = StatementBuilder::new();
+        lines.into_iter().for_each(|s| builder.parse(s.to_string()));
+        let stmt = builder.build();
+
+        assert_eq!(stmt.len(), 6);
+    }
+}
