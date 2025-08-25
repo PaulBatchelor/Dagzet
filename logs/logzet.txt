@@ -877,3 +877,17 @@ missing a top-level struct for representing the session data.
 I chose a bad name for it, but I think it works.
 ---
 EntryData did not need to be generic.
+
+@21:02 Try to build out top-level functions for session tree #timelog:00:40:07
+I gotta eliminate SessionData. Or at least shove it down a few levels.
+---
+It's amazing how complex and ugly this has gotten. I'm pushing
+all these abstractions juuusst below the surface, all to
+make things feel a little bit better for the fingers
+and the brain.
+---
+Well, it builds. That's the nicest thing I can say. There's
+a lot of text being flung around. The abstractions are starting
+to blur. It takes effort to maintain something. These
+are definitely the wrong abstractions. I'm hoping this
+refactor will be worth it.

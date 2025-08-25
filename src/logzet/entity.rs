@@ -26,12 +26,12 @@ pub struct EntityList {
 pub struct BlockIndex(pub usize);
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EntryIndex(usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct EntryIndex(pub usize);
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SessionIndex(usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub struct SessionIndex(pub usize);
 
 #[allow(dead_code)]
 impl EntityList {

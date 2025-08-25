@@ -1,5 +1,6 @@
 use crate::logzet::entity::Entity;
-use crate::logzet::{BlockData, EntityId, EntryData, SessionData, SessionInfo, Time};
+use crate::logzet::session_tree::{EntryNode, SessionTreeWrapper};
+use crate::logzet::{BlockData, EntityId, EntryData, SessionInfo, SessionWrapper, Time};
 
 #[allow(dead_code)]
 pub trait WithId {
@@ -58,7 +59,7 @@ impl WithId for Entity {
     }
 }
 
-impl<T> WithId for SessionData<T, SessionInfo> {
+impl<T> WithId for SessionWrapper<T, SessionInfo> {
     type Id = EntityId;
     fn id(&self) -> Self::Id {
         0
@@ -69,6 +70,26 @@ impl<T> WithId for SessionData<T, SessionInfo> {
 }
 
 impl WithId for EntryData {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        0
+    }
+    fn with_id(self, _id: Self::Id) -> Self {
+        self
+    }
+}
+
+impl WithId for SessionTreeWrapper {
+    type Id = EntityId;
+    fn id(&self) -> Self::Id {
+        0
+    }
+    fn with_id(self, _id: Self::Id) -> Self {
+        self
+    }
+}
+
+impl WithId for EntryNode {
     type Id = EntityId;
     fn id(&self) -> Self::Id {
         0

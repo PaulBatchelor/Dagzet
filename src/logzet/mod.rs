@@ -175,14 +175,16 @@ impl<T> EntryMap<T> {
     }
 }
 
+type DateMap<T, U> = BTreeMap<DateKey, SessionWrapper<T, U>>;
+
 #[allow(dead_code)]
 #[derive(Default)]
-struct SessionMap<T> {
-    inner: BTreeMap<DateKey, T>,
+struct SessionMap<T, U> {
+    inner: DateMap<T, U>,
 }
 
 #[allow(dead_code)]
-impl<T> SessionMap<T> {
+impl<T, U> SessionMap<T, U> {
     fn new() -> Self {
         SessionMap {
             inner: BTreeMap::new(),
@@ -191,14 +193,14 @@ impl<T> SessionMap<T> {
 
     fn insert<'a>(&mut self, id: usize, date: &'a Date)
     where
-        T: From<&'a Date> + WithId<Id = usize>,
+        SessionWrapper<T, U>: From<&'a Date> + WithId<Id = usize>,
     {
         let date_key = date.key.clone();
-        let data: T = date.into();
+        let data: SessionWrapper<T, U> = date.into();
         self.inner.insert(date_key, data.with_id(id));
     }
 
-    fn get_session(&mut self, session_key: &DateKey) -> Option<&mut T> {
+    fn get_session(&mut self, session_key: &DateKey) -> Option<&mut SessionWrapper<T, U>> {
         self.inner.get_mut(session_key)
     }
 }
@@ -212,7 +214,7 @@ struct SessionInfo {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct SessionData<T, S> {
+struct SessionWrapper<T, S> {
     entries: EntryMap<T>,
     data: S,
 }
@@ -221,7 +223,7 @@ trait InsertEntry<'a> {
     fn insert_entry(&mut self, id: usize, time: &'a Time);
 }
 
-impl<'a, T> InsertEntry<'a> for SessionData<T, SessionInfo>
+impl<'a, T> InsertEntry<'a> for SessionWrapper<T, SessionInfo>
 where
     T: WithId<Id = usize> + From<&'a Time>,
 {
@@ -234,7 +236,7 @@ trait InsertBlock {
     fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData);
 }
 
-impl<T> InsertBlock for SessionData<T, SessionInfo>
+impl<T> InsertBlock for SessionWrapper<T, SessionInfo>
 where
     T: AppendBlock,
 {
@@ -243,9 +245,9 @@ where
     }
 }
 
-impl<T> From<&Date> for SessionData<T, SessionInfo> {
-    fn from(date: &Date) -> SessionData<T, SessionInfo> {
-        SessionData {
+impl<T> From<&Date> for SessionWrapper<T, SessionInfo> {
+    fn from(date: &Date) -> SessionWrapper<T, SessionInfo> {
+        SessionWrapper {
             data: SessionInfo {
                 title: date.title.clone(),
                 tags: date.tags.clone(),
