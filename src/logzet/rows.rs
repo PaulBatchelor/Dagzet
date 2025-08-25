@@ -17,6 +17,7 @@ pub struct EntryRow {
     pub category: Option<String>,
     pub nblocks: usize,
     pub top_block: Option<usize>,
+    pub position: usize,
 }
 
 #[allow(dead_code)]
@@ -177,9 +178,9 @@ impl From<Session> for SessionRows {
     }
 }
 
-impl From<(&EntityList, &SessionNode, &EntryNode)> for EntryRow {
-    fn from(value: (&EntityList, &SessionNode, &EntryNode)) -> EntryRow {
-        let (entity_list, session_node, entry_node) = value;
+impl From<(&EntityList, &SessionNode, &EntryNode, usize)> for EntryRow {
+    fn from(value: (&EntityList, &SessionNode, &EntryNode, usize)) -> EntryRow {
+        let (entity_list, session_node, entry_node, position) = value;
 
         let entity_id = entry_node.entry.0;
 
@@ -210,6 +211,7 @@ impl From<(&EntityList, &SessionNode, &EntryNode)> for EntryRow {
             nblocks,
             top_block,
             category,
+            position,
         }
     }
 }
@@ -244,9 +246,10 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
         let logs = session_node
             .entries
             .iter()
-            .map(|e| {
+            .enumerate()
+            .map(|(i, e)| {
                 e.blocks.iter().for_each(|b| blocks.push(b));
-                (entity_list, session_node, e).into()
+                (entity_list, session_node, e, i).into()
             })
             .collect();
 
@@ -557,16 +560,16 @@ mod tests {
             blocks: [3, 4].into_iter().map(BlockIndex).collect(),
         };
 
-        let row: EntryRow = (&entity_list, &session, &node).into();
+        let row: EntryRow = (&entity_list, &session, &node, 2).into();
         assert_eq!(row.entity_id, time2.id, "wrong id");
         let date_string: String = (&date.key).into();
         assert_eq!(&row.day, &date_string, "wrong date");
         let time_string: String = (&time2.key).into();
         assert_eq!(&row.time, &time_string, "wrong time");
         assert_eq!(&row.title, &time2.title, "wrong title");
-        // TODO: make the blocks work
         assert_eq!(row.nblocks, 2, "wrong nblocks");
         assert_eq!(row.top_block, Some(3), "wrong top block");
+        assert_eq!(row.position, 2, "wrong position");
     }
 
     #[test]

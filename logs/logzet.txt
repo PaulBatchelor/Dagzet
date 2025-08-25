@@ -977,4 +977,23 @@ the entry rows data. Somehow, the generated SQL code would
 be able to separate out the two. The advantage here is that
 the position data could be recorded this way.
 
-@14:11 complete entry blocks test, flesh out blocks row
+@14:11 complete entry blocks test #timelog:00:21:35
+
+@14:33 am I going to have to redo the entry IDs? #timelog:00:05:33
+Entry IDs are stored in virtually every row struct type.
+Should they be strings for the UUID?
+---
+No, this is correct. The table that will be generated will
+produce a rowid belonging to the entity table. This rowid
+will be obtained using a little subquery in the insert that
+will find it based on UUID.
+---
+So, the pipeline goes entity id -> UUID -> row id.a
+---
+We already have these traits in place, good. I can
+move forward to blocks.
+
+@14:39 before blocks, address entry position #timelog:00:09:46
+You know, position was also a variable in the EntryRow,
+but I just removed it a few hours ago. It's the same problem,
+how to track this data?
