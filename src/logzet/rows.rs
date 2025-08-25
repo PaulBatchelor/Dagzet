@@ -1,5 +1,10 @@
 use crate::logzet::{DateKey, EntityId, Session, TimeKey};
 
+use super::{
+    entity::{BlockIndex, Entity, EntityList},
+    session_tree::{EntryNode, SessionNode},
+};
+
 /// Represents a row in a SQLite table, corresponding with the existing
 /// log schema
 #[allow(dead_code)]
@@ -162,10 +167,79 @@ impl From<Session> for SessionRows {
     }
 }
 
+impl From<(&EntityList, &EntryNode)> for EntryRow {
+    fn from(_value: (&EntityList, &EntryNode)) -> EntryRow {
+        // TODO: implement
+        EntryRow::default()
+    }
+}
+
+impl From<(&EntityList, &BlockIndex)> for BlockRow {
+    fn from(_value: (&EntityList, &BlockIndex)) -> BlockRow {
+        // TODO: implement
+        BlockRow::default()
+    }
+}
+
+impl From<&Entity> for EntityRow {
+    fn from(_value: &Entity) -> EntityRow {
+        // TODO: implement
+        EntityRow::default()
+    }
+}
+
+impl From<(&EntityList, usize, &String)> for EntityConnectionsRow {
+    fn from(_value: (&EntityList, usize, &String)) -> EntityConnectionsRow {
+        // TODO: implement
+        EntityConnectionsRow::default()
+    }
+}
+
+impl From<(&EntityList, &SessionNode)> for SessionRows {
+    fn from(value: (&EntityList, &SessionNode)) -> SessionRows {
+        let (entity_list, session_node) = value;
+
+        let mut blocks: Vec<&BlockIndex> = Vec::new();
+
+        let logs = session_node
+            .entries
+            .iter()
+            .map(|e| {
+                e.blocks.iter().for_each(|b| blocks.push(b));
+                (entity_list, e).into()
+            })
+            .collect();
+
+        let blocks = blocks
+            .into_iter()
+            .map(|b| (entity_list, b).into())
+            .collect();
+
+        let entities = entity_list.entities.iter().map(|e| e.into()).collect();
+
+        let connections = entity_list
+            .connections
+            .iter()
+            .flat_map(|(id, nodes)| nodes.iter().map(|s| (entity_list, *id, s).into()))
+            .collect();
+
+        SessionRows {
+            logs,
+            blocks,
+            entities,
+            connections,
+            ..Default::default()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::logzet::{Block, Date, Entry, Time};
+    use crate::logzet::session_tree::entities_to_map;
+    use crate::logzet::statement::Statement;
+    use crate::logzet::statements_to_entities;
+    use crate::logzet::{Block, Command, Date, Entry, TextLine, Time};
 
     #[derive(Default, Debug, PartialEq)]
     struct TestEntry {
@@ -312,5 +386,104 @@ mod tests {
 
         assert_eq!(generated_uuids.len(), expected_entity_uuids.len());
         assert_eq!(generated_uuids, expected_entity_uuids);
+    }
+
+    #[test]
+    fn test_session_tree_rows() {
+        let dt = Statement::Date;
+        let tm = Statement::Time;
+        let tl = Statement::TextLine;
+        let br = Statement::Break;
+        let cmd = Statement::Command;
+        let time1 = TimeKey {
+            hour: 14,
+            minute: 1,
+        };
+        let time2 = TimeKey {
+            hour: 15,
+            minute: 30,
+        };
+        let document: Vec<Statement> = vec![
+            dt(Date::default()),
+            tm(Time {
+                key: time1.clone(),
+                title: "First task of the day".to_string(),
+                tags: vec!["timelog:00:15:00".to_string()],
+                ..Default::default()
+            }),
+            cmd(Command {
+                args: vec!["dz".to_string(), "a/a".to_string()],
+            }),
+            tl(TextLine {
+                text: "I am writing some words".to_string(),
+            }),
+            tl(TextLine {
+                text: "and I am doing my task".to_string(),
+            }),
+            tm(Time {
+                key: time2.clone(),
+                title: "Brainstorming".to_string(),
+                tags: vec!["timelog:00:18:00".to_string(), "brainstorm".to_string()],
+                ..Default::default()
+            }),
+            tl(TextLine {
+                text: "this is a thought I had".to_string(),
+            }),
+            br.clone(),
+            cmd(Command {
+                args: vec!["dz".to_string(), "a/b".to_string()],
+            }),
+            tl(TextLine {
+                text: "this is a another thought I had".to_string(),
+            }),
+            br.clone(),
+            cmd(Command {
+                args: vec!["dz".to_string(), "a/c".to_string()],
+            }),
+            tl(TextLine {
+                text: "one more thought".to_string(),
+            }),
+            dt(Date {
+                key: DateKey {
+                    year: 2025,
+                    month: 8,
+                    day: 23,
+                    ..Default::default()
+                },
+                ..Default::default()
+            }),
+        ];
+
+        let entities = statements_to_entities(document);
+
+        let session_map = entities_to_map(&entities.entities);
+
+        let tree: Vec<SessionNode> = session_map.into_iter().map(|s| s.into()).collect();
+
+        let rows: SessionRows = (&entities, &tree[0]).into();
+
+        assert_eq!(rows.logs.len(), 2, "Incorrect number of logs");
+        assert_eq!(rows.blocks.len(), 4, "Incorrect number of blocks");
+        assert_eq!(
+            rows.entities.len(),
+            entities.entities.len(),
+            "Incorrect number of entities"
+        );
+        assert_eq!(rows.connections.len(), 3, "Incorrect number of connections");
+    }
+
+    #[test]
+    fn test_entry_node_to_row() {
+        unimplemented!();
+    }
+
+    #[test]
+    fn test_block_index_to_row() {
+        unimplemented!();
+    }
+
+    #[test]
+    fn test_entity_to_row() {
+        unimplemented!();
     }
 }

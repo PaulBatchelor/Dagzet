@@ -904,3 +904,50 @@ might fail.
 ---
 Session Tree works! The refactoring almost feels worth it.
 But wow, am I tired.
+
+@2025-08-25#logzet Brooklyn, PLG
+@09:04 what is left here? #timelog:00:13:42
+It feels close now. Last night the so-called "session tree"
+tests passed, which means I now have an entity structure
+and with it, the ability to connect any of those entities
+to dagzet nodes.
+---
+I could keep adding features and quality of life things,
+but I'm running out of time. I need to get the actual
+logzet parser to work. end to end. text files go in,
+and SQLite commands go out.
+---
+A session tree needs to be able to generate SQLite rows.
+We have this set up for the other session, but not the
+session tree. The data should be identical, the means
+of accessing it will be different.
+---
+There needs to be something that reads a file and converts
+the lines to statements. This is probably what I'll do last.
+---
+The SQLite row structures I've been making need to be
+converted to actual SQLite code. This shouldn't be too
+difficult, as this is re-using components I made for dagzet.
+---
+The generated SQLite code won't work with the dzbrowse
+stuff I've made. I think it's two steps forward one step
+back. Progress. But, I will need to address that.
+---
+I was never fully pleased with the web interface for
+dagzet. Finding nodes was still tricky, presentation was
+not great either. Also, more important for me moving forward
+is to be able to make it easier to make connections between
+nodes that are further away. All beyond the scope of logzet
+right now though.
+
+@09:22 convert session trees to row data #timelog:00:53:30
+rows.rs. Good opportunity to attempt to move some tests
+around if possible.
+---
+LOL. I already did this. So much for that side quest. Onwards.
+---
+The high level test has been made. This ensures that the the conversion
+makes the right number of rows. It does not check that they have
+been converted correctly. In fact, I've created a bunch of From
+traits that still need to be implemented, with some test stubs
+to fill out as well. The TDD will continue until morale improves.
