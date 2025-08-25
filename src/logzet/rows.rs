@@ -47,6 +47,13 @@ struct EntityConnectionsRow {
 }
 
 #[allow(dead_code)]
+#[derive(Default)]
+struct TagsRow {
+    entity_id: EntityId,
+    tag: String,
+}
+
+#[allow(dead_code)]
 fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow> {
     connections
         .iter()
@@ -63,10 +70,11 @@ fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow>
 #[derive(Default)]
 pub struct SessionRows {
     logs: Vec<EntryRow>,
-    dayblurb: SessionRow,
+    session: SessionRow,
     blocks: Vec<BlockRow>,
     entities: Vec<EntityRow>,
     connections: Vec<EntityConnectionsRow>,
+    tags: Vec<TagsRow>,
 }
 
 #[allow(dead_code)]
@@ -132,7 +140,7 @@ impl From<Session> for SessionRows {
         let category = None;
         let mut entities = Vec::new();
 
-        let dayblurb = SessionRow {
+        let session = SessionRow {
             day: format!("{:04}-{:02}-{:02}", date.year, date.month, date.day),
             title: Some(value.date.title),
             category: category.clone(),
@@ -182,7 +190,7 @@ impl From<Session> for SessionRows {
         let blocks = Vec::new();
 
         SessionRows {
-            dayblurb,
+            session,
             logs,
             blocks,
             entities,
@@ -290,13 +298,19 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
     fn from(value: (&EntityList, &SessionNode)) -> SessionRows {
         let (entity_list, session_node) = value;
 
-        let mut blocks: Vec<(&BlockIndex, usize)> = Vec::new();
+        let mut blocks: Vec<(&BlockIndex, EntityId)> = Vec::new();
+        let mut tags: Vec<(EntityId, String)> = vec![];
 
         let logs = session_node
             .entries
             .iter()
             .enumerate()
             .map(|(i, e)| {
+                if let Some(entry) = entity_list.get_entry(e.entry) {
+                    for tag in &entry.tags {
+                        tags.push((i, tag.clone()));
+                    }
+                }
                 e.blocks.iter().for_each(|b| blocks.push((b, i)));
                 (entity_list, session_node, e, i).into()
             })
@@ -317,11 +331,17 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             .flat_map(|(id, nodes)| nodes.iter().map(|s| (entity_list, *id, s).into()))
             .collect();
 
+        let tags = tags
+            .into_iter()
+            .map(|(entity_id, tag)| TagsRow { entity_id, tag })
+            .collect();
+
         SessionRows {
             logs,
             blocks,
             entities,
             connections,
+            tags,
             ..Default::default()
         }
     }
@@ -423,10 +443,10 @@ mod tests {
         let session_rows: SessionRows = session.into();
 
         // Check dayblurb entry
-        let dayblurb = &session_rows.dayblurb;
-        assert_eq!(&dayblurb.day, "2025-08-20");
-        assert!(&dayblurb.title.is_some());
-        if let Some(title) = &dayblurb.title {
+        let session = &session_rows.session;
+        assert_eq!(&session.day, "2025-08-20");
+        assert!(&session.title.is_some());
+        if let Some(title) = &session.title {
             assert_eq!(title, "Title for Day");
         }
 
@@ -561,6 +581,7 @@ mod tests {
         assert_eq!(rows.blocks.len(), 4, "Incorrect number of blocks");
         assert_eq!(rows.entities.len(), 7, "Incorrect number of entities");
         assert_eq!(rows.connections.len(), 3, "Incorrect number of connections");
+        assert_eq!(rows.tags.len(), 3, "Incorrect number of tags");
     }
 
     struct EntityListData {
