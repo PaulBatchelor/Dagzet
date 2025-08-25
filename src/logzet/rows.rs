@@ -1,7 +1,7 @@
 use crate::logzet::{DateKey, EntityId, Session, TimeKey};
 
 use super::{
-    entity::{BlockIndex, Entity, EntityList},
+    entity::{BlockIndex, EntityList},
     session_tree::{EntryNode, SessionNode},
 };
 
@@ -236,18 +236,41 @@ impl From<(&EntityList, &BlockIndex, usize, usize)> for BlockRow {
     }
 }
 
-impl From<&Entity> for EntityRow {
-    fn from(_value: &Entity) -> EntityRow {
-        // TODO: implement
-        EntityRow::default()
-    }
-}
-
 impl From<(&EntityList, usize, &String)> for EntityConnectionsRow {
     fn from(_value: (&EntityList, usize, &String)) -> EntityConnectionsRow {
         // TODO: implement
         EntityConnectionsRow::default()
     }
+}
+
+fn session_to_uuids(entity_list: &EntityList, session_node: &SessionNode) -> Vec<EntityRowId> {
+    let mut uuids = Vec::new();
+    let date = entity_list
+        .get_session(session_node.session)
+        .map(|date| date.key.clone());
+
+    uuids.push(EntityRowId {
+        date: date.clone(),
+        ..Default::default()
+    });
+
+    session_node.entries.iter().for_each(|e| {
+        let time = entity_list.get_entry(e.entry).map(|time| time.key.clone());
+        uuids.push(EntityRowId {
+            date: date.clone(),
+            time: time.clone(),
+            ..Default::default()
+        });
+        e.blocks.iter().enumerate().for_each(|(i, _)| {
+            uuids.push(EntityRowId {
+                date: date.clone(),
+                time: time.clone(),
+                position: Some(i),
+            });
+        })
+    });
+
+    uuids
 }
 
 impl From<(&EntityList, &SessionNode)> for SessionRows {
@@ -272,7 +295,8 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             .map(|(i, b)| (entity_list, b.0, i, b.1).into())
             .collect();
 
-        let entities = entity_list.entities.iter().map(|e| e.into()).collect();
+        let uuids = session_to_uuids(entity_list, session_node);
+        let entities = uuids.into_iter().map(|uuid| EntityRow { uuid }).collect();
 
         let connections = entity_list
             .connections
@@ -293,7 +317,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::logzet::entity::{EntryIndex, SessionIndex};
+    use crate::logzet::entity::{Entity, EntityList, EntryIndex, SessionIndex};
     use crate::logzet::session_tree::entities_to_map;
     use crate::logzet::statement::Statement;
     use crate::logzet::statements_to_entities;
@@ -552,7 +576,14 @@ mod tests {
                 ..Default::default()
             };
 
-            let time1 = Time::default();
+            let time1 = Time {
+                key: TimeKey {
+                    hour: 10,
+                    minute: 30,
+                },
+                ..Default::default()
+            };
+
             let time2 = Time {
                 key: TimeKey {
                     hour: 11,
@@ -563,11 +594,6 @@ mod tests {
                 tags: vec!["one".to_string(), "two".to_string(), "three".to_string()],
             };
             let time = [time1, time2];
-
-            let session = SessionNode {
-                session: SessionIndex(0),
-                ..Default::default()
-            };
 
             let block1 = BlockData::Text(TextBlock::default());
             let block2 = BlockData::Text(TextBlock {
@@ -583,6 +609,20 @@ mod tests {
             });
 
             let block = [block1, block2];
+
+            let session = SessionNode {
+                session: SessionIndex(0),
+                entries: vec![
+                    EntryNode {
+                        entry: EntryIndex(1),
+                        blocks: vec![],
+                    },
+                    EntryNode {
+                        entry: EntryIndex(2),
+                        blocks: [3, 4].into_iter().map(BlockIndex).collect(),
+                    },
+                ],
+            };
 
             entity_list.entities.push(Entity::Session(date.clone()));
             entity_list.entities.push(Entity::Entry(time[0].clone()));
@@ -646,6 +686,25 @@ mod tests {
 
     #[test]
     fn test_entity_to_row() {
-        unimplemented!();
+        let data = EntityListData::new();
+        let entity_list = &data.entity_list;
+        let session = &data.session;
+        let uuids = session_to_uuids(entity_list, session);
+        let entity_rows: Vec<EntityRow> =
+            uuids.into_iter().map(|uuid| EntityRow { uuid }).collect();
+
+        let expected_uuids: Vec<String> = [
+            "2025-08-25",
+            "2025-08-25/10:30",
+            "2025-08-25/11:23",
+            "2025-08-25/11:23/0",
+            "2025-08-25/11:23/1",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        let generated_uuids: Vec<String> = entity_rows.iter().map(|r| r.into()).collect();
+        assert_eq!(&expected_uuids, &generated_uuids);
     }
 }

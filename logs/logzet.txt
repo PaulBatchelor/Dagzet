@@ -1002,3 +1002,22 @@ how to track this data?
 how will parent id be retrieved? hmm.
 ---
 updated the from trait to include parent id
+
+@15:40 now onto entity list #timelog:01:04:12
+My current entity From trait won't wory because
+it is using the Entity data directly, and that won't
+have any scope. A block entity by itself doesn't know
+anyting about which entry it belongs to, or which
+entry it belongs to.
+---
+Realization: This is why we need the entity list AND
+the tree that references the entity. The information
+the tree gives is the relationships between the entities.
+---
+I'm scrapping the From trait. I had this notion of making
+a list of tuples pointing to the session, entry, and block
+indexes. But, that's a lot of overhead. I think it's better
+to generate the row UUIds from traversing through the session,
+and then produce the rows from that.
+---
+Wow that took longer than expected

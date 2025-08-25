@@ -26,7 +26,7 @@ pub struct SessionNode {
 }
 
 #[allow(dead_code)]
-pub fn entities_to_map(entities: &Vec<Entity>) -> DateMap<EntryNode, SessionNode> {
+pub fn entities_to_map(entities: &[Entity]) -> DateMap<EntryNode, SessionNode> {
     SessionBuilder::<EntryNode, SessionNode>::new()
         .process(entities)
         .build()
