@@ -1,4 +1,4 @@
-use crate::logzet::{DateKey, EntityId, Session, TimeKey};
+use crate::logzet::{Date, DateKey, EntityId, Session, TimeKey};
 
 use super::{
     entity::{BlockIndex, ConnectionMap, EntityList},
@@ -294,12 +294,31 @@ fn session_to_uuids(entity_list: &EntityList, session_node: &SessionNode) -> Vec
     uuids
 }
 
+impl From<(EntityId, &Date)> for SessionRow {
+    fn from(value: (EntityId, &Date)) -> SessionRow {
+        let (entity_id, session) = value;
+        SessionRow {
+            category: session.key.context.clone(),
+            day: (&session.key).into(),
+            blurb: None,
+            entity_id,
+            title: Some(session.title.clone()),
+        }
+    }
+}
+
 impl From<(&EntityList, &SessionNode)> for SessionRows {
     fn from(value: (&EntityList, &SessionNode)) -> SessionRows {
         let (entity_list, session_node) = value;
 
         let mut blocks: Vec<(&BlockIndex, EntityId)> = Vec::new();
         let mut tags: Vec<(EntityId, String)> = vec![];
+
+        let session = if let Some(session) = entity_list.get_session(session_node.session) {
+            (session_node.session.0, session).into()
+        } else {
+            SessionRow::default()
+        };
 
         let logs = session_node
             .entries
@@ -342,7 +361,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             entities,
             connections,
             tags,
-            ..Default::default()
+            session,
         }
     }
 }
@@ -518,8 +537,18 @@ mod tests {
             hour: 15,
             minute: 30,
         };
+        let date = Date {
+            key: DateKey {
+                month: 8,
+                day: 20,
+                year: 2025,
+                context: None,
+            },
+            title: "Title for Day".to_string(),
+            tags: vec![],
+        };
         let document: Vec<Statement> = vec![
-            dt(Date::default()),
+            dt(date.clone()),
             tm(Time {
                 key: time1.clone(),
                 title: "First task of the day".to_string(),
@@ -582,6 +611,14 @@ mod tests {
         assert_eq!(rows.entities.len(), 7, "Incorrect number of entities");
         assert_eq!(rows.connections.len(), 3, "Incorrect number of connections");
         assert_eq!(rows.tags.len(), 3, "Incorrect number of tags");
+
+        let session = rows.session;
+
+        assert_eq!(&session.day, "2025-08-20");
+        assert!(&session.title.is_some());
+        if let Some(title) = &session.title {
+            assert_eq!(title, "Title for Day");
+        }
     }
 
     struct EntityListData {

@@ -1070,3 +1070,8 @@ the connections map a BTreeMap.
 We could make the connections sorted too, but this should
 already be deterministic. They will appear in insertion order,
 relative to the node they are associated with.
+
+@18:56 time for tags #timelog:00:12:45
+should be very similar to connections
+
+@19:10 make SessionRow work #timelog:00:12:54
