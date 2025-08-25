@@ -997,3 +997,8 @@ move forward to blocks.
 You know, position was also a variable in the EntryRow,
 but I just removed it a few hours ago. It's the same problem,
 how to track this data?
+
+@14:51 now, blocks #timelog:00:42:02
+how will parent id be retrieved? hmm.
+---
+updated the from trait to include parent id

@@ -216,10 +216,23 @@ impl From<(&EntityList, &SessionNode, &EntryNode, usize)> for EntryRow {
     }
 }
 
-impl From<(&EntityList, &BlockIndex)> for BlockRow {
-    fn from(_value: (&EntityList, &BlockIndex)) -> BlockRow {
-        // TODO: implement
-        BlockRow::default()
+impl From<(&EntityList, &BlockIndex, usize, usize)> for BlockRow {
+    fn from(value: (&EntityList, &BlockIndex, usize, usize)) -> BlockRow {
+        let (entity_list, entity_id, position, parent_id) = value;
+
+        let content = if let Some(block) = entity_list.get_block(*entity_id) {
+            block.into()
+        } else {
+            String::new()
+        };
+
+        let entity_id = entity_id.0;
+        BlockRow {
+            entity_id,
+            position,
+            parent_id,
+            content,
+        }
     }
 }
 
@@ -241,21 +254,22 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
     fn from(value: (&EntityList, &SessionNode)) -> SessionRows {
         let (entity_list, session_node) = value;
 
-        let mut blocks: Vec<&BlockIndex> = Vec::new();
+        let mut blocks: Vec<(&BlockIndex, usize)> = Vec::new();
 
         let logs = session_node
             .entries
             .iter()
             .enumerate()
             .map(|(i, e)| {
-                e.blocks.iter().for_each(|b| blocks.push(b));
+                e.blocks.iter().for_each(|b| blocks.push((b, i)));
                 (entity_list, session_node, e, i).into()
             })
             .collect();
 
         let blocks = blocks
             .into_iter()
-            .map(|b| (entity_list, b).into())
+            .enumerate()
+            .map(|(i, b)| (entity_list, b.0, i, b.1).into())
             .collect();
 
         let entities = entity_list.entities.iter().map(|e| e.into()).collect();
@@ -516,51 +530,93 @@ mod tests {
         assert_eq!(rows.connections.len(), 3, "Incorrect number of connections");
     }
 
+    struct EntityListData {
+        date: Date,
+        time: [Time; 2],
+        block: [BlockData; 2],
+        node: EntryNode,
+        session: SessionNode,
+        entity_list: EntityList,
+    }
+
+    impl EntityListData {
+        fn new() -> Self {
+            let mut entity_list = EntityList::default();
+            let date = Date {
+                key: DateKey {
+                    year: 2025,
+                    month: 8,
+                    day: 25,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+
+            let time1 = Time::default();
+            let time2 = Time {
+                key: TimeKey {
+                    hour: 11,
+                    minute: 23,
+                },
+                id: 2,
+                title: "Title for Entry 2".to_string(),
+                tags: vec!["one".to_string(), "two".to_string(), "three".to_string()],
+            };
+            let time = [time1, time2];
+
+            let session = SessionNode {
+                session: SessionIndex(0),
+                ..Default::default()
+            };
+
+            let block1 = BlockData::Text(TextBlock::default());
+            let block2 = BlockData::Text(TextBlock {
+                uuid: 5,
+                lines: [
+                    "these are some lines.",
+                    "they should be separated by spaces",
+                    "since it is text and not pre-text",
+                ]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+            });
+
+            let block = [block1, block2];
+
+            entity_list.entities.push(Entity::Session(date.clone()));
+            entity_list.entities.push(Entity::Entry(time[0].clone()));
+            entity_list.entities.push(Entity::Entry(time[1].clone()));
+            entity_list.entities.push(Entity::Block(block[0].clone()));
+            entity_list.entities.push(Entity::Block(block[1].clone()));
+
+            // Manually build an entry node. This is usually automated
+            let node = EntryNode {
+                entry: EntryIndex(2),
+                blocks: [3, 4].into_iter().map(BlockIndex).collect(),
+            };
+
+            EntityListData {
+                date,
+                time,
+                block,
+                node,
+                session,
+                entity_list,
+            }
+        }
+    }
+
     #[test]
     fn test_entry_node_to_row() {
-        let mut entity_list = EntityList::default();
-        let date = Date {
-            key: DateKey {
-                year: 2025,
-                month: 8,
-                day: 25,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
+        let data = EntityListData::new();
+        let time2 = &data.time[1];
+        let date = &data.date;
+        let entity_list = &data.entity_list;
+        let node = &data.node;
+        let session = &data.session;
 
-        let time1 = Time::default();
-        let time2 = Time {
-            key: TimeKey {
-                hour: 11,
-                minute: 23,
-            },
-            id: 2,
-            title: "Title for Entry 2".to_string(),
-            tags: vec!["one".to_string(), "two".to_string(), "three".to_string()],
-        };
-
-        let session = SessionNode {
-            session: SessionIndex(0),
-            ..Default::default()
-        };
-
-        let block1 = BlockData::Text(TextBlock::default());
-        let block2 = BlockData::Text(TextBlock::default());
-
-        entity_list.entities.push(Entity::Session(date.clone()));
-        entity_list.entities.push(Entity::Entry(time1.clone()));
-        entity_list.entities.push(Entity::Entry(time2.clone()));
-        entity_list.entities.push(Entity::Block(block1.clone()));
-        entity_list.entities.push(Entity::Block(block2.clone()));
-
-        // Manually build an entry node. This is usually automated
-        let node = EntryNode {
-            entry: EntryIndex(2),
-            blocks: [3, 4].into_iter().map(BlockIndex).collect(),
-        };
-
-        let row: EntryRow = (&entity_list, &session, &node, 2).into();
+        let row: EntryRow = (entity_list, session, node, 2).into();
         assert_eq!(row.entity_id, time2.id, "wrong id");
         let date_string: String = (&date.key).into();
         assert_eq!(&row.day, &date_string, "wrong date");
@@ -574,7 +630,18 @@ mod tests {
 
     #[test]
     fn test_block_index_to_row() {
-        unimplemented!();
+        let data = EntityListData::new();
+        let entity_list = &data.entity_list;
+        let position = 1;
+        let parent_id = data.node.entry.0;
+        let block = &data.node.blocks[position];
+        let row: BlockRow = (entity_list, block, position, parent_id).into();
+
+        assert_eq!(row.entity_id, block.0, "wrong entity id");
+        assert_eq!(row.position, position, "wrong position");
+        assert_eq!(row.parent_id, parent_id, "wrong parent id");
+        let expected_content: String = (&data.block[position]).into();
+        assert_eq!(&row.content, &expected_content, "wrong content");
     }
 
     #[test]

@@ -91,6 +91,14 @@ enum BlockData {
     Text(TextBlock),
 }
 
+impl From<&BlockData> for String {
+    fn from(block: &BlockData) -> String {
+        match block {
+            BlockData::Text(text) => text.lines.join(" "),
+        }
+    }
+}
+
 impl Default for BlockData {
     fn default() -> BlockData {
         BlockData::Text(TextBlock::default())
