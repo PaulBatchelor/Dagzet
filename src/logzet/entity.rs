@@ -16,6 +16,7 @@ pub enum Entity {
 }
 
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct EntityList {
     pub entities: Vec<Entity>,
     pub connections: HashMap<EntityId, DagzetPathList>,
@@ -35,21 +36,21 @@ pub struct SessionIndex(pub usize);
 
 #[allow(dead_code)]
 impl EntityList {
-    fn get_block(&self, index: BlockIndex) -> Option<&BlockData> {
+    pub fn get_block(&self, index: BlockIndex) -> Option<&BlockData> {
         if let Entity::Block(block) = &self.entities[index.0] {
             return Some(block);
         }
         None
     }
 
-    fn get_entry(&self, index: EntryIndex) -> Option<&Time> {
+    pub fn get_entry(&self, index: EntryIndex) -> Option<&Time> {
         if let Entity::Entry(time) = &self.entities[index.0] {
             return Some(time);
         }
         None
     }
 
-    fn get_session(&self, index: SessionIndex) -> Option<&Date> {
+    pub fn get_session(&self, index: SessionIndex) -> Option<&Date> {
         if let Entity::Session(date) = &self.entities[index.0] {
             return Some(date);
         }

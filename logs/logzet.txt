@@ -951,3 +951,30 @@ makes the right number of rows. It does not check that they have
 been converted correctly. In fact, I've created a bunch of From
 traits that still need to be implemented, with some test stubs
 to fill out as well. The TDD will continue until morale improves.
+
+@12:35 Set up From trait for RowEntry #timelog:00:54:48
+Uh oh, I have not figured out tags yet have I.
+---
+Uh oh, I have not figured out how to get the "day" into the SQLite row.
+This is actually okay, because the scope is only to one session
+node. Just change the From trait to include the session node.
+---
+Got to think about blocks
+
+@13:53 How do blocks going to work with SQL? #timelog:00:09:54
+For Entries, I think there's enough information
+to know the top block pointer, and the number of blocks.
+---
+When blocks are queried, they are going to need to know
+which entry they are a part of, and what order they
+appear in. Fastest thing is to order by entity ID,
+which is determined by the order they were created in.
+I don't think the position for a block is explicitely
+tracked anywhere.
+---
+It might make sense to construct the rows data inside
+the entry rows data. Somehow, the generated SQL code would
+be able to separate out the two. The advantage here is that
+the position data could be recorded this way.
+
+@14:11 complete entry blocks test, flesh out blocks row

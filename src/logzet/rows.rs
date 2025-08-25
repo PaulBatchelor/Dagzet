@@ -14,7 +14,6 @@ pub struct EntryRow {
     pub day: String,
     pub time: String,
     pub title: String,
-    pub position: usize,
     pub category: Option<String>,
     pub nblocks: usize,
     pub top_block: Option<usize>,
@@ -64,26 +63,38 @@ pub struct EntityRowId {
     position: Option<usize>,
 }
 
+impl From<&DateKey> for String {
+    fn from(date: &DateKey) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        let s = format!("{:04}-{:02}-{:02}", date.year, date.month, date.day);
+
+        parts.push(s);
+
+        if let Some(context) = &date.context {
+            parts.push(context.clone());
+        }
+
+        parts.join("#")
+    }
+}
+
+impl From<&TimeKey> for String {
+    fn from(time: &TimeKey) -> String {
+        format!("{:02}:{:02}", time.hour, time.minute)
+    }
+}
+
 impl From<&EntityRow> for String {
     fn from(row: &EntityRow) -> String {
         let mut chunks: Vec<String> = Vec::new();
         let uuid = &row.uuid;
 
         if let Some(date) = &uuid.date {
-            let mut parts: Vec<String> = Vec::new();
-            let s = format!("{:04}-{:02}-{:02}", date.year, date.month, date.day);
-
-            parts.push(s);
-
-            if let Some(context) = &date.context {
-                parts.push(context.clone());
-            }
-            chunks.push(parts.join("#"));
+            chunks.push(date.into());
         }
 
         if let Some(time) = &uuid.time {
-            let s = format!("{:02}:{:02}", time.hour, time.minute);
-            chunks.push(s);
+            chunks.push(time.into());
         }
 
         if let Some(position) = uuid.position {
@@ -130,7 +141,6 @@ impl From<Session> for SessionRows {
                 time: format!("{:02}:{:02}", e.time.key.hour, e.time.key.minute),
                 category: category.clone(),
                 title: e.time.title.clone(),
-                position: 0,
                 //comment: blocks_to_string(e.blocks),
                 ..Default::default()
             })
@@ -167,10 +177,40 @@ impl From<Session> for SessionRows {
     }
 }
 
-impl From<(&EntityList, &EntryNode)> for EntryRow {
-    fn from(_value: (&EntityList, &EntryNode)) -> EntryRow {
-        // TODO: implement
-        EntryRow::default()
+impl From<(&EntityList, &SessionNode, &EntryNode)> for EntryRow {
+    fn from(value: (&EntityList, &SessionNode, &EntryNode)) -> EntryRow {
+        let (entity_list, session_node, entry_node) = value;
+
+        let entity_id = entry_node.entry.0;
+
+        let (day, category) = if let Some(date) = entity_list.get_session(session_node.session) {
+            ((&date.key).into(), date.key.context.clone())
+        } else {
+            (String::new(), None)
+        };
+
+        let (time, title) = if let Some(time) = entity_list.get_entry(entry_node.entry) {
+            ((&time.key).into(), time.title.clone())
+        } else {
+            (String::new(), String::new())
+        };
+
+        let nblocks = entry_node.blocks.len();
+        let top_block = if !entry_node.blocks.is_empty() {
+            Some(entry_node.blocks[0].0)
+        } else {
+            None
+        };
+
+        EntryRow {
+            entity_id,
+            day,
+            time,
+            title,
+            nblocks,
+            top_block,
+            category,
+        }
     }
 }
 
@@ -206,7 +246,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             .iter()
             .map(|e| {
                 e.blocks.iter().for_each(|b| blocks.push(b));
-                (entity_list, e).into()
+                (entity_list, session_node, e).into()
             })
             .collect();
 
@@ -236,10 +276,11 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::logzet::entity::{EntryIndex, SessionIndex};
     use crate::logzet::session_tree::entities_to_map;
     use crate::logzet::statement::Statement;
     use crate::logzet::statements_to_entities;
-    use crate::logzet::{Block, Command, Date, Entry, TextLine, Time};
+    use crate::logzet::{Block, BlockData, Command, Date, Entry, TextBlock, TextLine, Time};
 
     #[derive(Default, Debug, PartialEq)]
     struct TestEntry {
@@ -474,7 +515,58 @@ mod tests {
 
     #[test]
     fn test_entry_node_to_row() {
-        unimplemented!();
+        let mut entity_list = EntityList::default();
+        let date = Date {
+            key: DateKey {
+                year: 2025,
+                month: 8,
+                day: 25,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let time1 = Time::default();
+        let time2 = Time {
+            key: TimeKey {
+                hour: 11,
+                minute: 23,
+            },
+            id: 2,
+            title: "Title for Entry 2".to_string(),
+            tags: vec!["one".to_string(), "two".to_string(), "three".to_string()],
+        };
+
+        let session = SessionNode {
+            session: SessionIndex(0),
+            ..Default::default()
+        };
+
+        let block1 = BlockData::Text(TextBlock::default());
+        let block2 = BlockData::Text(TextBlock::default());
+
+        entity_list.entities.push(Entity::Session(date.clone()));
+        entity_list.entities.push(Entity::Entry(time1.clone()));
+        entity_list.entities.push(Entity::Entry(time2.clone()));
+        entity_list.entities.push(Entity::Block(block1.clone()));
+        entity_list.entities.push(Entity::Block(block2.clone()));
+
+        // Manually build an entry node. This is usually automated
+        let node = EntryNode {
+            entry: EntryIndex(2),
+            blocks: [3, 4].into_iter().map(BlockIndex).collect(),
+        };
+
+        let row: EntryRow = (&entity_list, &session, &node).into();
+        assert_eq!(row.entity_id, time2.id, "wrong id");
+        let date_string: String = (&date.key).into();
+        assert_eq!(&row.day, &date_string, "wrong date");
+        let time_string: String = (&time2.key).into();
+        assert_eq!(&row.time, &time_string, "wrong time");
+        assert_eq!(&row.title, &time2.title, "wrong title");
+        // TODO: make the blocks work
+        assert_eq!(row.nblocks, 2, "wrong nblocks");
+        assert_eq!(row.top_block, Some(3), "wrong top block");
     }
 
     #[test]
