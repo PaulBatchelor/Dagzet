@@ -1,8 +1,8 @@
 use super::{
     entity::{BlockIndex, Entity, EntryIndex, SessionIndex},
     session::SessionBuilder,
-    AppendBlock, BlockData, Date, DateMap, EntryMap, InsertBlock, InsertEntry, SessionWrapper,
-    Time, TimeKey, WithId,
+    AppendBlock, BlockData, Date, DateKey, DateMap, EntryMap, InsertBlock, InsertEntry,
+    SessionWrapper, Time, TimeKey, WithId,
 };
 
 #[allow(dead_code)]
@@ -63,6 +63,29 @@ impl<T> From<&Date> for SessionWrapper<T, SessionNode> {
         SessionWrapper {
             data: SessionNode::default(),
             entries: EntryMap::new(),
+        }
+    }
+}
+
+impl From<(DateKey, SessionWrapper<EntryNode, SessionNode>)> for SessionNode
+where
+    EntryNode: From<(TimeKey, EntryNode)>,
+{
+    fn from(value: (DateKey, SessionWrapper<EntryNode, SessionNode>)) -> SessionNode {
+        let (_date, data) = value;
+        SessionNode {
+            session: data.data.session,
+            entries: data.entries.inner.into_iter().map(|e| e.into()).collect(),
+        }
+    }
+}
+
+impl From<(TimeKey, EntryNode)> for EntryNode {
+    fn from(value: (TimeKey, EntryNode)) -> EntryNode {
+        let (_time, data) = value;
+        EntryNode {
+            entry: data.entry,
+            blocks: data.blocks.into_iter().collect(),
         }
     }
 }

@@ -891,3 +891,9 @@ a lot of text being flung around. The abstractions are starting
 to blur. It takes effort to maintain something. These
 are definitely the wrong abstractions. I'm hoping this
 refactor will be worth it.
+
+@21:45 initial construction of SessionTree #timelog:00:15:41
+Entity list goes in. Session Tree comes out.
+---
+Actually, the final SessionTree hasn't been produced yet.
+Only the map has been made.
