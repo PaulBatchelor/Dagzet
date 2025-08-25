@@ -863,3 +863,17 @@ iterator and passing that value by reference, which was causing the value
 to drop.
 ---
 it's a little more copying now, but I think it works.
+
+@19:35 flesh out and test session tree #timelog:00:38:49
+I see another problem with my design. The BTreeMaps aren't
+fully abstracted away like they should be.
+---
+Somewhere, I need to be able to provide 3 parameters: data structs
+for session, data, and entry. Fill out the traits, and the result should
+be an ordered tree of data with those structs.
+---
+Oh thank god, this seems salvageable. I think I was just
+missing a top-level struct for representing the session data.
+I chose a bad name for it, but I think it works.
+---
+EntryData did not need to be generic.
