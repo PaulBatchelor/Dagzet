@@ -6,7 +6,7 @@ use crate::logzet::{
 use crate::logzet::entity::Entity;
 use std::collections::BTreeMap;
 
-type DefaultSession = SessionData<EntryData<BlockData>, SessionInfo>;
+type DefaultSession = SessionData<EntryData, SessionInfo>;
 
 #[derive(Default)]
 struct SessionBuilder<T> {
@@ -98,8 +98,8 @@ pub fn entities_to_session_map(entities: Vec<Entity>) -> BTreeMap<DateKey, Defau
         .build()
 }
 
-impl From<(TimeKey, EntryData<BlockData>)> for Entry {
-    fn from(value: (TimeKey, EntryData<BlockData>)) -> Entry {
+impl From<(TimeKey, EntryData)> for Entry {
+    fn from(value: (TimeKey, EntryData)) -> Entry {
         let (time, data) = value;
         Entry {
             time: Time {

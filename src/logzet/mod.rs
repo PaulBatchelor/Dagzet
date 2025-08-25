@@ -104,10 +104,11 @@ impl From<BlockData> for Block {
         }
     }
 }
+type EntryData = EntryData_<BlockData>;
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct EntryData<T> {
+struct EntryData_<T> {
     title: String,
     tags: Vec<String>,
     blocks: Vec<T>,
@@ -117,14 +118,14 @@ trait AppendBlock {
     fn append_block(&mut self, block: &BlockData);
 }
 
-impl AppendBlock for EntryData<BlockData> {
+impl AppendBlock for EntryData {
     fn append_block(&mut self, block: &BlockData) {
         self.blocks.push(block.clone())
     }
 }
 
-impl From<&Time> for EntryData<BlockData> {
-    fn from(time: &Time) -> EntryData<BlockData> {
+impl From<&Time> for EntryData {
+    fn from(time: &Time) -> EntryData {
         EntryData {
             title: time.title.clone(),
             tags: time.tags.clone(),
