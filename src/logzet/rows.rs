@@ -546,11 +546,7 @@ mod tests {
 
         assert_eq!(rows.logs.len(), 2, "Incorrect number of logs");
         assert_eq!(rows.blocks.len(), 4, "Incorrect number of blocks");
-        assert_eq!(
-            rows.entities.len(),
-            entities.entities.len(),
-            "Incorrect number of entities"
-        );
+        assert_eq!(rows.entities.len(), 7, "Incorrect number of entities");
         assert_eq!(rows.connections.len(), 3, "Incorrect number of connections");
     }
 

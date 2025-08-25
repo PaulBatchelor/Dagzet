@@ -1021,3 +1021,11 @@ to generate the row UUIds from traversing through the session,
 and then produce the rows from that.
 ---
 Wow that took longer than expected
+
+@16:44 fix broken tests #timelog:00:07:56
+we are missing an entity, apparently
+---
+Actually, it was the test that was wrong. There were only 7 items
+in the particular session, the 8th item was the start of a new session.
+I was comparing against the whole list of entities, not the session
+itself.
