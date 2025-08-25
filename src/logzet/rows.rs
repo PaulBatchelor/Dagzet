@@ -1,7 +1,7 @@
 use crate::logzet::{DateKey, EntityId, Session, TimeKey};
 
 use super::{
-    entity::{BlockIndex, EntityList},
+    entity::{BlockIndex, ConnectionMap, EntityList},
     session_tree::{EntryNode, SessionNode},
 };
 
@@ -44,6 +44,19 @@ struct BlockRow {
 struct EntityConnectionsRow {
     entity_id: EntityId,
     node: String,
+}
+
+#[allow(dead_code)]
+fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow> {
+    connections
+        .iter()
+        .flat_map(|(entity_id, c)| {
+            c.iter().map(|node| EntityConnectionsRow {
+                entity_id: *entity_id,
+                node: node.clone(),
+            })
+        })
+        .collect()
 }
 
 #[allow(dead_code)]
@@ -626,6 +639,11 @@ mod tests {
             entity_list.entities.push(Entity::Block(block[0].clone()));
             entity_list.entities.push(Entity::Block(block[1].clone()));
 
+            entity_list.connections.insert(4, vec!["a/c".to_string()]);
+            entity_list
+                .connections
+                .insert(2, vec!["a/a".to_string(), "a/b".to_string()]);
+
             // Manually build an entry node. This is usually automated
             let node = EntryNode {
                 entry: EntryIndex(2),
@@ -702,5 +720,25 @@ mod tests {
 
         let generated_uuids: Vec<String> = entity_rows.iter().map(|r| r.into()).collect();
         assert_eq!(&expected_uuids, &generated_uuids);
+    }
+
+    #[test]
+    fn test_connections_to_rows() {
+        let data = EntityListData::new();
+        let connections = &data.entity_list.connections;
+
+        let rows: Vec<EntityConnectionsRow> = connections_to_rows(connections);
+
+        assert_eq!(rows.len(), 3);
+
+        let expected_rows: Vec<_> = [(2, "a/a"), (2, "a/b"), (4, "a/c")]
+            .into_iter()
+            .map(|(i, s)| (i as usize, s.to_string()))
+            .collect();
+
+        let generated_rows: Vec<(usize, String)> =
+            rows.iter().map(|r| (r.entity_id, r.node.clone())).collect();
+
+        assert_eq!(expected_rows, generated_rows);
     }
 }

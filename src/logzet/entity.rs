@@ -1,7 +1,7 @@
 use crate::logzet::id::WithId;
 use crate::logzet::statement::Statement;
 use crate::logzet::{BlockData, Date, TextBlock, Time};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[allow(dead_code)]
 pub type EntityId = usize;
@@ -15,11 +15,13 @@ pub enum Entity {
     Session(Date),
 }
 
+pub type ConnectionMap = BTreeMap<EntityId, DagzetPathList>;
+
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct EntityList {
     pub entities: Vec<Entity>,
-    pub connections: HashMap<EntityId, DagzetPathList>,
+    pub connections: ConnectionMap,
 }
 
 #[allow(dead_code)]
@@ -62,7 +64,7 @@ impl EntityList {
 pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     let mut entities = vec![];
     let mut curblock: Option<Vec<String>> = None;
-    let mut connections: HashMap<EntityId, DagzetPathList> = HashMap::new();
+    let mut connections: BTreeMap<EntityId, DagzetPathList> = BTreeMap::new();
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {

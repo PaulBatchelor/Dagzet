@@ -1062,3 +1062,11 @@ a list of session rows.
 ---
 Each grouping of session rows are turned in to SQLite code,
 and this is printed to standard output.
+
+@18:28 set up connections row #timelog:00:27:03
+I want connections to have deterministic output. So, I'm making
+the connections map a BTreeMap.
+---
+We could make the connections sorted too, but this should
+already be deterministic. They will appear in insertion order,
+relative to the node they are associated with.
