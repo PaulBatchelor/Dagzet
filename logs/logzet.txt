@@ -1075,3 +1075,5 @@ relative to the node they are associated with.
 should be very similar to connections
 
 @19:10 make SessionRow work #timelog:00:12:54
+
+@19:31 set up simple file IO in main #timelog:00:11:14
