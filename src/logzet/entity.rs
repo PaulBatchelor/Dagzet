@@ -144,7 +144,7 @@ pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     }
     // Wrap up last block if it is the last thing
     if let Some(blk) = curblock {
-        entities.push(Entity::Block(BlockData::Text(TextBlock::new(blk))));
+        entities.push(Entity::Block(BlockData::Text(TextBlock::new(blk))).with_id(entities.len()));
     }
     EntityList {
         entities,

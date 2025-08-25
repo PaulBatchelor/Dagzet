@@ -893,7 +893,14 @@ are definitely the wrong abstractions. I'm hoping this
 refactor will be worth it.
 
 @21:45 initial construction of SessionTree #timelog:00:15:41
-Entity list goes in. Session Tree comes out.
----
 Actually, the final SessionTree hasn't been produced yet.
 Only the map has been made.
+
+@22:01 test the SessionTree #timelog:00:28:01
+Entity list goes in. Session Tree comes out.
+---
+Many of the traits are placeholders. I expect this
+might fail.
+---
+Session Tree works! The refactoring almost feels worth it.
+But wow, am I tired.
