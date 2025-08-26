@@ -4,6 +4,8 @@ use dagzet::logzet::session_tree::entities_to_map;
 use dagzet::logzet::session_tree::SessionNode;
 use dagzet::logzet::statement::Statement;
 use dagzet::logzet::statement::StatementBuilder;
+use dagzet::logzet::tables::generate_schemas;
+use dagzet::logzet::tables::Schemas;
 use std::env;
 use std::fs::File;
 use std::io;
@@ -53,7 +55,9 @@ fn rows() -> Vec<SessionRows> {
 
 fn main() {
     let mut f = io::stdout();
+    let schemas = Schemas::default();
+    schemas.generate(&mut f);
     for row in rows() {
-        row.generate(&mut f)
+        row.generate(&schemas, &mut f)
     }
 }

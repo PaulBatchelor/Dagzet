@@ -1104,3 +1104,10 @@ I think I can fix that.
 @21:30 bugs with statementbuidler nice #timelog:00:09:27
 
 @21:34 make titles optional in statements #timelog:00:21:58
+
+@22:02 attempt to generate an entity list table #timelog:00:26:31
+We got an entity table!
+---
+Before I make more tables, I'd like to make it so this log actually parses.
+I think the one gotcha I have here are that blocks aren't yet able
+to attach to the start of sessions.

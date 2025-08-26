@@ -72,7 +72,7 @@ pub struct SessionRows {
     logs: Vec<EntryRow>,
     session: SessionRow,
     blocks: Vec<BlockRow>,
-    entities: Vec<EntityRow>,
+    pub entities: Vec<EntityRow>,
     connections: Vec<EntityConnectionsRow>,
     tags: Vec<TagsRow>,
 }
@@ -130,8 +130,8 @@ impl From<&EntityRow> for String {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct EntityRow {
-    uuid: EntityRowId,
+pub struct EntityRow {
+    pub uuid: EntityRowId,
 }
 
 impl From<Session> for SessionRows {

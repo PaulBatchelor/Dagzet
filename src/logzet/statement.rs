@@ -32,7 +32,6 @@ impl TryFrom<String> for Statement {
             // try to match it on a time
             let re_time = Regex::new(r"@(\d\d):(\d\d)(?:\s+(.*))?").unwrap();
             if let Some(caps) = re_time.captures(&value) {
-                dbg!(&caps);
                 let hour = match str::parse::<u8>(&caps[1]) {
                     Ok(hour) => hour,
                     Err(_) => {
