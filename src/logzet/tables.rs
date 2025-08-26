@@ -238,18 +238,6 @@ impl Schemas {
 }
 
 impl SessionRows {
-    pub fn generate_connections(&self, schemas: &Schemas, f: &mut impl io::Write) {
-        for row in &self.connections {
-            let s = schemas
-                .connections
-                .sqlize_insert(&EntityConnectionRow {
-                    inner: row,
-                    lookup: &self.lookup,
-                })
-                .to_string();
-            let _ = f.write_all(&s.into_bytes());
-        }
-    }
     pub fn generate(&self, schemas: &Schemas, f: &mut impl io::Write) {
         // Entity List
         for row in &self.entities {
@@ -282,6 +270,17 @@ impl SessionRows {
             let s = schemas
                 .blocks
                 .sqlize_insert(&BlockRow {
+                    inner: row,
+                    lookup: &self.lookup,
+                })
+                .to_string();
+            let _ = f.write_all(&s.into_bytes());
+        }
+
+        for row in &self.connections {
+            let s = schemas
+                .connections
+                .sqlize_insert(&EntityConnectionRow {
                     inner: row,
                     lookup: &self.lookup,
                 })

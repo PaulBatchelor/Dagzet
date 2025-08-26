@@ -1278,3 +1278,10 @@ fixed and good to go.
 Just gonna test with the bigger one.
 ---
 Big one works
+
+@17:28 make connections local to sessions #timelog:00:10:39
+I think it'll be worth the extra legwork to scope
+each lookup table to just entities in the session.
+---
+actually, I connections were broken anyways. the symbol
+lookup table is only scoped for the current session.

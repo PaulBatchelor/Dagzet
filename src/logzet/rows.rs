@@ -418,6 +418,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
         let connections = entity_list
             .connections
             .iter()
+            .filter(|c| lookup.contains_key(c.0))
             .flat_map(|(id, nodes)| nodes.iter().map(|s| (entity_list, *id, s).into()))
             .collect();
 

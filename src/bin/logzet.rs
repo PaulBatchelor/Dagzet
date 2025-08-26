@@ -61,5 +61,5 @@ fn main() {
         row.generate(&schemas, &mut f)
     }
     // HACK: Only generate connections once
-    rows[0].generate_connections(&schemas, &mut f);
+    // rows[0].generate_connections(&schemas, &mut f);
 }
