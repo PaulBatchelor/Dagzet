@@ -89,7 +89,6 @@ where
 }
 
 /// An intermediate structure used for sorting date entries in chronological order
-#[allow(dead_code)]
 pub fn entities_to_session_map(entities: Vec<Entity>) -> BTreeMap<DateKey, DefaultSession> {
     SessionBuilder::<EntryData, SessionInfo>::new()
         .process(&entities)

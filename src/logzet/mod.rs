@@ -9,14 +9,12 @@ pub mod tables;
 use entity::{statements_to_entities, EntityId};
 use id::WithId;
 use session::build_session_map;
-use session_tree::SessionNode;
 use statement::Statement;
 
 pub fn hello() {
     println!("hi logzet");
 }
 
-#[allow(dead_code)]
 #[derive(Default, Clone, Debug, PartialEq, Ord, Eq, PartialOrd)]
 pub struct DateKey {
     month: u8,
@@ -25,7 +23,6 @@ pub struct DateKey {
     context: Option<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Default, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
 pub struct TimeKey {
     hour: u8,
@@ -33,7 +30,6 @@ pub struct TimeKey {
 }
 
 /// Simple representation of a date
-#[allow(dead_code)]
 #[derive(Default, Clone)]
 pub struct Date {
     key: DateKey,
@@ -42,7 +38,6 @@ pub struct Date {
 }
 
 /// Simple representation of a time
-#[allow(dead_code)]
 #[derive(Default, Clone)]
 pub struct Time {
     id: EntityId,
@@ -52,24 +47,20 @@ pub struct Time {
 }
 
 /// A single line of text
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct TextLine {
     text: String,
 }
 
 /// A command
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct Command {
     args: Vec<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
 enum Block {
-    Text(String),
-    PreText(String),
+    Text,
 }
 
 #[derive(Default, Clone)]
@@ -109,13 +100,12 @@ impl Default for BlockData {
 impl From<BlockData> for Block {
     fn from(value: BlockData) -> Block {
         match value {
-            BlockData::Text(lines) => Block::Text(lines.lines.join(" ")),
+            BlockData::Text(_) => Block::Text,
         }
     }
 }
 type EntryData = EntryData_<BlockData>;
 
-#[allow(dead_code)]
 #[derive(Default)]
 struct EntryData_<T> {
     title: String,
@@ -143,13 +133,11 @@ impl From<&Time> for EntryData {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 struct EntryMap<T> {
     inner: BTreeMap<TimeKey, T>,
 }
 
-#[allow(dead_code)]
 impl<T> EntryMap<T> {
     fn new() -> Self {
         EntryMap {
@@ -186,13 +174,11 @@ impl<T> EntryMap<T> {
 
 pub type DateMap<T, U> = BTreeMap<DateKey, SessionWrapper<T, U>>;
 
-#[allow(dead_code)]
 #[derive(Default)]
 struct SessionMap<T, U> {
     inner: DateMap<T, U>,
 }
 
-#[allow(dead_code)]
 impl<T, U> SessionMap<T, U> {
     fn new() -> Self {
         SessionMap {
@@ -214,14 +200,12 @@ impl<T, U> SessionMap<T, U> {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 struct SessionInfo {
     title: String,
     tags: Vec<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionWrapper<T, S> {
     entries: EntryMap<T>,
@@ -273,17 +257,12 @@ impl<T> From<&Date> for SessionWrapper<T, SessionInfo> {
     }
 }
 
-#[allow(dead_code)]
-type SessionTreeMap = BTreeMap<DateKey, SessionNode>;
-
-#[allow(dead_code)]
 #[derive(Default, Clone)]
 struct Entry {
     time: Time,
     blocks: Vec<Block>,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 struct Session {
     date: Date,
@@ -291,7 +270,6 @@ struct Session {
 }
 
 #[allow(dead_code)]
-// TODO: error handling, plz read that rust for rustaceans chapter
 fn build_sessions(stmts: Vec<Statement>) -> Vec<Session> {
     let entities = statements_to_entities(stmts);
     let session_map = build_session_map(entities);
@@ -423,13 +401,7 @@ mod tests {
 
         assert_eq!(&entries[0].time.key, &time1);
         assert_eq!(entries[0].blocks.len(), 1);
-        let block_text = match &entries[0].blocks[0] {
-            Block::Text(text) => text,
-            _ => panic!("Expected block text"),
-        };
-
-        // Make sure line breaking logic is being handled correctly
-        assert_eq!(block_text, "I am writing some words and I am doing my task");
+        assert!(matches!(entries[0].blocks[0], Block::Text));
 
         assert_eq!(&entries[1].time.key, &time2);
         assert_eq!(entries[1].blocks.len(), 3);

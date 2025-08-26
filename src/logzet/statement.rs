@@ -2,13 +2,11 @@ use crate::logzet::{Command, Date, DateKey, TextLine, Time, TimeKey};
 use regex::Regex;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum StatementError {
     ParseError,
 }
 
 /// A granular unit of information, typically represented as a line of text
-#[allow(dead_code)]
 #[derive(Clone)]
 pub enum Statement {
     Date(Date),
@@ -148,13 +146,11 @@ fn title_and_tags(full_title: &str) -> (String, Vec<String>) {
     (title, tags)
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct StatementBuilder {
     statements: Vec<Statement>,
 }
 
-#[allow(dead_code)]
 impl StatementBuilder {
     pub fn new() -> Self {
         StatementBuilder::default()

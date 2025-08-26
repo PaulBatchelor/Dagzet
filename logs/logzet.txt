@@ -1287,3 +1287,5 @@ actually, I connections were broken anyways. the symbol
 lookup table is only scoped for the current session.
 
 17:41 add BEGIN/COMMIT #timelog:00:01:47
+
+@17:43 remove dead_code annotations

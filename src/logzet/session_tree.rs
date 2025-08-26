@@ -5,7 +5,6 @@ use super::{
     SessionWrapper, Time, TimeKey, WithId,
 };
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntryNode {
     pub entry: EntryIndex,
@@ -18,7 +17,6 @@ impl AppendBlock for EntryNode {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionNode {
     pub session: SessionIndex,
@@ -26,7 +24,6 @@ pub struct SessionNode {
     pub blocks: Vec<BlockIndex>,
 }
 
-#[allow(dead_code)]
 pub fn entities_to_map(entities: &[Entity]) -> DateMap<EntryNode, SessionNode> {
     SessionBuilder::<EntryNode, SessionNode>::new()
         .process(entities)
@@ -218,3 +215,4 @@ mod tests {
         assert_eq!(tree.blocks.len(), 3);
     }
 }
+

@@ -3,12 +3,10 @@ use crate::logzet::statement::Statement;
 use crate::logzet::{BlockData, Date, TextBlock, Time};
 use std::collections::BTreeMap;
 
-#[allow(dead_code)]
 pub type EntityId = usize;
 
 pub type DagzetPathList = Vec<String>;
 
-#[allow(dead_code)]
 pub enum Entity {
     Block(BlockData),
     Entry(Time),
@@ -17,26 +15,21 @@ pub enum Entity {
 
 pub type ConnectionMap = BTreeMap<EntityId, DagzetPathList>;
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntityList {
     pub entities: Vec<Entity>,
     pub connections: ConnectionMap,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockIndex(pub usize);
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct EntryIndex(pub usize);
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct SessionIndex(pub usize);
 
-#[allow(dead_code)]
 impl EntityList {
     pub fn get_block(&self, index: BlockIndex) -> Option<&BlockData> {
         if let Entity::Block(block) = &self.entities[index.0] {
@@ -60,7 +53,6 @@ impl EntityList {
     }
 }
 
-#[allow(dead_code)]
 pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     let mut entities = vec![];
     let mut curblock: Option<Vec<String>> = None;
@@ -154,3 +146,4 @@ pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
         connections,
     }
 }
+

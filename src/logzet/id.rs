@@ -4,7 +4,6 @@ use crate::logzet::{BlockData, EntityId, EntryData, SessionInfo, SessionWrapper,
 
 use super::entity::{EntryIndex, SessionIndex};
 
-#[allow(dead_code)]
 pub trait WithId {
     type Id;
     fn id(&self) -> Self::Id;

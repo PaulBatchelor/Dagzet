@@ -2,13 +2,12 @@ use crate::logzet::{DateKey, EntityId, Session, TimeKey};
 use std::collections::HashMap;
 
 use super::{
-    entity::{BlockIndex, ConnectionMap, EntityList},
+    entity::{BlockIndex, EntityList},
     session_tree::{EntryNode, SessionNode},
 };
 
 /// Represents a row in a SQLite table, corresponding with the existing
 /// log schema
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntryRow {
     pub entity_id: EntityId,
@@ -24,7 +23,6 @@ pub struct EntryRow {
     pub position: usize,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionRow {
     pub entity_id: EntityRowId,
@@ -35,7 +33,6 @@ pub struct SessionRow {
     pub top_block: Option<usize>,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct BlockRow {
     pub entity_id: EntityId,
@@ -44,34 +41,18 @@ pub struct BlockRow {
     pub content: String,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntityConnectionsRow {
     pub entity_id: EntityId,
     pub node: String,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct TagsRow {
     pub entity_id: EntityId,
     pub tag: String,
 }
 
-#[allow(dead_code)]
-fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow> {
-    connections
-        .iter()
-        .flat_map(|(entity_id, c)| {
-            c.iter().map(|node| EntityConnectionsRow {
-                entity_id: *entity_id,
-                node: node.clone(),
-            })
-        })
-        .collect()
-}
-
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionRows {
     // TODO: rename "logs" to entries
@@ -86,7 +67,6 @@ pub struct SessionRows {
     pub lookup: HashMap<EntityId, String>,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntityRowId {
     date: Option<DateKey>,
@@ -142,7 +122,6 @@ impl From<&EntityRow> for String {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct EntityRow {
     pub uuid: EntityRowId,
@@ -482,7 +461,7 @@ mod tests {
                 title: val.title.clone(),
                 ..Default::default()
             };
-            let blocks = val.blocks.iter().map(|s| Block::Text(s.clone())).collect();
+            let blocks = val.blocks.iter().map(|_| Block::Text).collect();
             Entry { time, blocks }
         }
     }
@@ -886,26 +865,6 @@ mod tests {
 
         let generated_uuids: Vec<String> = entity_rows.iter().map(|r| r.into()).collect();
         assert_eq!(&expected_uuids, &generated_uuids);
-    }
-
-    #[test]
-    fn test_connections_to_rows() {
-        let data = EntityListData::new();
-        let connections = &data.entity_list.connections;
-
-        let rows: Vec<EntityConnectionsRow> = connections_to_rows(connections);
-
-        assert_eq!(rows.len(), 3);
-
-        let expected_rows: Vec<_> = [(2, "a/a"), (2, "a/b"), (4, "a/c")]
-            .into_iter()
-            .map(|(i, s)| (i as usize, s.to_string()))
-            .collect();
-
-        let generated_rows: Vec<(usize, String)> =
-            rows.iter().map(|r| (r.entity_id, r.node.clone())).collect();
-
-        assert_eq!(expected_rows, generated_rows);
     }
 
     #[test]
