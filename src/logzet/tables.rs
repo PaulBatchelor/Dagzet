@@ -1,4 +1,7 @@
-use crate::logzet::rows::{EntryRow as InnerEntryRow, SessionRow as InnerSessionRow, SessionRows};
+use crate::logzet::rows::{
+    BlockRow as InnerBlockRow, EntryRow as InnerEntryRow, SessionRow as InnerSessionRow,
+    SessionRows,
+};
 use crate::sqlite::{escape_quotes, Param, ParamType, Row, SQLize, Table};
 use std::collections::HashMap;
 
@@ -125,11 +128,48 @@ impl Default for Table<EntryTable> {
     }
 }
 
+struct BlockTable;
+
+struct BlockRow<'a> {
+    inner: &'a InnerBlockRow,
+    lookup: &'a HashMap<EntityId, String>,
+}
+
+impl<BlockTable> Row<BlockTable> for BlockRow<'_> {
+    fn sqlize_values(&self) -> String {
+        let inner = &self.inner;
+        let id = uuid_lookup(self.lookup, Some(inner.entity_id));
+        let parent = uuid_lookup(self.lookup, Some(inner.parent_id));
+        let position = inner.position;
+        let content = &inner.content;
+
+        format!(
+            "{}, {}, '{}', {}",
+            id,
+            parent,
+            escape_quotes(content),
+            position
+        )
+    }
+}
+
+impl Default for Table<BlockTable> {
+    fn default() -> Self {
+        let mut con: Table<BlockTable> = Table::new("lz_blocks");
+        con.add_column(&Param::new("id", ParamType::Integer));
+        con.add_column(&Param::new("parent", ParamType::Integer));
+        con.add_column(&Param::new("content", ParamType::Text));
+        con.add_column(&Param::new("position", ParamType::Integer));
+        con
+    }
+}
+
 #[derive(Default)]
 pub struct Schemas {
     entities: Table<EntityTable>,
     sessions: Table<SessionTable>,
     entries: Table<EntryTable>,
+    blocks: Table<BlockTable>,
 }
 
 impl Schemas {
@@ -137,6 +177,7 @@ impl Schemas {
         let _ = f.write_all(&self.entities.sqlize().into_bytes());
         let _ = f.write_all(&self.sessions.sqlize().into_bytes());
         let _ = f.write_all(&self.entries.sqlize().into_bytes());
+        let _ = f.write_all(&self.blocks.sqlize().into_bytes());
     }
 }
 
@@ -162,6 +203,17 @@ impl SessionRows {
             let s = schemas
                 .entries
                 .sqlize_insert(&EntryRow {
+                    inner: row,
+                    lookup: &self.lookup,
+                })
+                .to_string();
+            let _ = f.write_all(&s.into_bytes());
+        }
+
+        for row in &self.blocks {
+            let s = schemas
+                .blocks
+                .sqlize_insert(&BlockRow {
                     inner: row,
                     lookup: &self.lookup,
                 })

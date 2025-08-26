@@ -37,11 +37,11 @@ pub struct SessionRow {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct BlockRow {
-    entity_id: EntityId,
-    parent_id: EntityId,
-    position: usize,
-    content: String,
+pub struct BlockRow {
+    pub entity_id: EntityId,
+    pub parent_id: EntityId,
+    pub position: usize,
+    pub content: String,
 }
 
 #[allow(dead_code)]
@@ -77,7 +77,7 @@ pub struct SessionRows {
     // TODO: rename "logs" to entries
     pub logs: Vec<EntryRow>,
     pub session: SessionRow,
-    blocks: Vec<BlockRow>,
+    pub blocks: Vec<BlockRow>,
     pub entities: Vec<EntityRow>,
     connections: Vec<EntityConnectionsRow>,
     tags: Vec<TagsRow>,
@@ -375,6 +375,10 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
         let mut tags: Vec<(EntityId, String)> = vec![];
 
         let session = (entity_list, session_node).into();
+
+        session_node.blocks.iter().for_each(|b| {
+            blocks.push((b, session_node.session.0));
+        });
 
         let logs = session_node
             .entries

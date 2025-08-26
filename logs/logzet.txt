@@ -1215,3 +1215,14 @@ proper key.
 Lookup table works!
 
 @14:29 Entry table #timelog:00:22:03
+
+@14:52 block table #timelog:00:16:57
+I'm realizing this is where I'm going to want to do
+full text search. So, I'll get it working for now,
+but I'll want to circle back to make it FTS compatible.
+It's 3pm now, and I think I need to be doing other things.
+So, this will have to wait.
+---
+blocks from the session aren't showing up.
+---
+blocks have been added. no problem.
