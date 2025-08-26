@@ -30,8 +30,9 @@ impl TryFrom<String> for Statement {
             // It's a block, but which block type?
 
             // try to match it on a time
-            let re_time = Regex::new(r"@(\d\d):(\d\d)\s+(.*)").unwrap();
+            let re_time = Regex::new(r"@(\d\d):(\d\d)(?:\s+(.*))?").unwrap();
             if let Some(caps) = re_time.captures(&value) {
+                dbg!(&caps);
                 let hour = match str::parse::<u8>(&caps[1]) {
                     Ok(hour) => hour,
                     Err(_) => {
@@ -45,7 +46,11 @@ impl TryFrom<String> for Statement {
                     }
                 };
 
-                let (title, tags) = title_and_tags(&caps[3]);
+                let (title, tags) = if let Some(c) = caps.get(3) {
+                    title_and_tags(c.into())
+                } else {
+                    (String::new(), vec![])
+                };
 
                 return Ok(Statement::Time(Time {
                     key: TimeKey { hour, minute },
@@ -55,7 +60,7 @@ impl TryFrom<String> for Statement {
                 }));
             }
             // Try to match it on a Date
-            let re_date = Regex::new(r"@(\d\d\d\d)-(\d\d)-(\d\d)(#[a-z]+)??\s+(.*)").unwrap();
+            let re_date = Regex::new(r"@(\d\d\d\d)-(\d\d)-(\d\d)(#[a-z]+)?(?:\s+(.*))?").unwrap();
 
             if let Some(caps) = re_date.captures(&value) {
                 let year = match str::parse::<u16>(&caps[1]) {
@@ -85,7 +90,12 @@ impl TryFrom<String> for Statement {
                     None
                 };
 
-                let (title, tags) = title_and_tags(&caps[5]);
+                let (title, tags) = if let Some(c) = caps.get(5) {
+                    title_and_tags(c.into())
+                } else {
+                    (String::new(), vec![])
+                };
+
                 return Ok(Statement::Date(Date {
                     key: DateKey {
                         year,
@@ -97,6 +107,8 @@ impl TryFrom<String> for Statement {
                     tags,
                 }));
             }
+
+            return Err(StatementError::ParseError);
         }
 
         if value.starts_with("#!") {
@@ -359,5 +371,19 @@ mod tests {
             let expected_args: Vec<_> = ["dz", "foo/bar"].into_iter().map(String::from).collect();
             assert_eq!(&cmd.args, &expected_args);
         }
+    }
+
+    #[test]
+    fn test_statement_date_no_title() {
+        let datestr = "@2025-08-25";
+        let date: Option<Statement> = datestr.to_string().try_into().ok();
+        assert!(date.is_some(), "Could not parse");
+    }
+
+    #[test]
+    fn test_statement_time_no_title() {
+        let timestr = "@21:51";
+        let time: Option<Statement> = timestr.to_string().try_into().ok();
+        assert!(time.is_some(), "Could not parse");
     }
 }
