@@ -348,7 +348,7 @@ I think. Entity list might another intermediate step. commands might
 be a part of the entity list? Statements -> Entities -> Entities + Maps with pointers -> Sessions
 data struct (no references or entities), other linked metadata.
 
-@2025-08-21 Brooklyn
+@2025-08-21#logzet Brooklyn
 @12:06 Back to solving the entity list problem, first restating the problem #timelog:00:13:54
 I am opting for a different structure than what currently exists.
 The restructuring is going to be needed because it will make it
@@ -1158,3 +1158,29 @@ Nice! tests pass. Will things parse okay now?
 ---
 Oh hell yeah. It all parses now. Table generation, and then it
 should be done.
+
+@11:12 re-work SessionRow to include blocks #timelog:00:49:08
+This seems like a good thing to look at after getting
+blocks hooked up, because I think I'll be needing to tweak
+the schema for this.
+---
+It looks like I didn't do any tests for SessionRow yet. I seem
+to have put the bare minimum into it. Now that I've added
+blocks to the SessionRow struct, I actually need to rework
+the From trait to use the entity list like the other
+from traits.
+
+@12:07 sqlite table data generator for SessionRows #timelog:01:10:13
+entity UUID lookup is going to be interesting.
+---
+I think the EntityList might still need to be a thing.
+---
+Thinking about it, I think it might actually make
+sense to bake in the UUID into the row information.
+Bringing the entity list back into the mix is a
+messy abstraction. The memory hit will be fine.
+---
+this top block business... it also needs to be a UUID
+that resolves to an entity row id.
+---
+This might be tough to add...
