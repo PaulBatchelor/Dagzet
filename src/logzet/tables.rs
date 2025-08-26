@@ -1,8 +1,10 @@
-use crate::logzet::rows::{SessionRow, SessionRows};
+use crate::logzet::rows::{SessionRow as InnerSessionRow, SessionRows};
 use crate::sqlite::{Param, ParamType, Row, SQLize, Table};
+use std::collections::HashMap;
 
 use std::io;
 
+use super::entity::EntityId;
 use super::rows::EntityRow;
 struct EntityTable;
 
@@ -22,15 +24,31 @@ impl Default for Table<EntityTable> {
 }
 
 struct SessionTable;
-impl<SessionTable> Row<SessionTable> for SessionRow {
+
+struct SessionRow<'a> {
+    inner: &'a InnerSessionRow,
+    lookup: &'a HashMap<EntityId, String>,
+}
+impl<SessionTable> Row<SessionTable> for SessionRow<'_> {
     fn sqlize_values(&self) -> String {
-        let id: String = (&self.entity_id).into();
+        let inner = &self.inner;
+        let id: String = (&inner.entity_id).into();
         let id_lookup = format!("(SELECT rowid FROM lz_entities WHERE id IS '{}')", id);
-        let day = &self.day;
-        let title = self.title.as_deref().unwrap_or("");
-        let context = self.context.as_deref().unwrap_or("");
-        let nblocks = self.nblocks;
-        let top_block = self.top_block.unwrap_or_default();
+        let day = &inner.day;
+        let title = inner.title.as_deref().unwrap_or("");
+        let context = inner.context.as_deref().unwrap_or("");
+        let nblocks = inner.nblocks;
+        let top_block = if let Some(top_block) = inner.top_block {
+            dbg!(&top_block);
+            if let Some(uuid) = self.lookup.get(&top_block) {
+                format!("(SELECT rowid FROM lz_entities WHERE id IS '{}')", uuid)
+            } else {
+                "-2".to_string()
+            }
+        } else {
+            "-1".to_string()
+        };
+
         format!(
             "{}, '{}', '{}', '{}', {}, {}",
             id_lookup, day, title, context, nblocks, top_block
@@ -70,7 +88,13 @@ impl SessionRows {
             let s = schemas.entities.sqlize_insert(row).to_string();
             let _ = f.write_all(&s.into_bytes());
         }
-        let s = schemas.sessions.sqlize_insert(&self.session).to_string();
+        let s = schemas
+            .sessions
+            .sqlize_insert(&SessionRow {
+                inner: &self.session,
+                lookup: &self.lookup,
+            })
+            .to_string();
         let _ = f.write_all(&s.into_bytes());
     }
 }

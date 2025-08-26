@@ -1,4 +1,5 @@
 use crate::logzet::{DateKey, EntityId, Session, TimeKey};
+use std::collections::HashMap;
 
 use super::{
     entity::{BlockIndex, ConnectionMap, EntityList},
@@ -78,6 +79,7 @@ pub struct SessionRows {
     pub entities: Vec<EntityRow>,
     connections: Vec<EntityConnectionsRow>,
     tags: Vec<TagsRow>,
+    pub lookup: HashMap<EntityId, String>,
 }
 
 #[allow(dead_code)]
@@ -271,30 +273,53 @@ impl From<(&EntityList, usize, &String)> for EntityConnectionsRow {
     }
 }
 
-fn session_to_uuids(entity_list: &EntityList, session_node: &SessionNode) -> Vec<EntityRowId> {
+fn session_to_uuids(
+    entity_list: &EntityList,
+    session_node: &SessionNode,
+) -> Vec<(EntityId, EntityRowId)> {
     let mut uuids = Vec::new();
     let date = entity_list
         .get_session(session_node.session)
         .map(|date| date.key.clone());
 
-    uuids.push(EntityRowId {
-        date: date.clone(),
-        ..Default::default()
+    uuids.push((
+        session_node.session.0,
+        EntityRowId {
+            date: date.clone(),
+            ..Default::default()
+        },
+    ));
+
+    session_node.blocks.iter().enumerate().for_each(|(i, b)| {
+        uuids.push((
+            b.0,
+            EntityRowId {
+                date: date.clone(),
+                time: None,
+                position: Some(i),
+            },
+        ));
     });
 
     session_node.entries.iter().for_each(|e| {
         let time = entity_list.get_entry(e.entry).map(|time| time.key.clone());
-        uuids.push(EntityRowId {
-            date: date.clone(),
-            time: time.clone(),
-            ..Default::default()
-        });
-        e.blocks.iter().enumerate().for_each(|(i, _)| {
-            uuids.push(EntityRowId {
+        uuids.push((
+            e.entry.0,
+            EntityRowId {
                 date: date.clone(),
                 time: time.clone(),
-                position: Some(i),
-            });
+                ..Default::default()
+            },
+        ));
+        e.blocks.iter().enumerate().for_each(|(i, b)| {
+            uuids.push((
+                b.0,
+                EntityRowId {
+                    date: date.clone(),
+                    time: time.clone(),
+                    position: Some(i),
+                },
+            ));
         })
     });
 
@@ -371,7 +396,11 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             .collect();
 
         let uuids = session_to_uuids(entity_list, session_node);
-        let entities = uuids.into_iter().map(|uuid| EntityRow { uuid }).collect();
+        let lookup: HashMap<usize, String> = uuids.iter().map(|(i, e)| (*i, e.into())).collect();
+        let entities = uuids
+            .into_iter()
+            .map(|(_, uuid)| EntityRow { uuid })
+            .collect();
 
         let connections = entity_list
             .connections
@@ -391,6 +420,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             connections,
             tags,
             session,
+            lookup,
         }
     }
 }
@@ -824,8 +854,10 @@ mod tests {
         let entity_list = &data.entity_list;
         let session = &data.session[0];
         let uuids = session_to_uuids(entity_list, session);
-        let entity_rows: Vec<EntityRow> =
-            uuids.into_iter().map(|uuid| EntityRow { uuid }).collect();
+        let entity_rows: Vec<EntityRow> = uuids
+            .into_iter()
+            .map(|(_, uuid)| EntityRow { uuid })
+            .collect();
 
         let expected_uuids: Vec<String> = [
             "2025-08-25",
