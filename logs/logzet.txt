@@ -1093,3 +1093,10 @@ builds the actual SQLite file and runs queries.
 ---
 We can build this up incrementally I think. The top-level generate
 funciton can slowly populate more and more of the tables.
+
+@21:05 build the initial top-level generation method #timelog:00:15:28
+From there, the underyling SQLite tables can be built up
+one by one.
+---
+I forgot to make titles option in the statement parser.
+I think I can fix that.

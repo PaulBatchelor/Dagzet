@@ -32,7 +32,6 @@ impl TryFrom<String> for Statement {
             // try to match it on a time
             let re_time = Regex::new(r"@(\d\d):(\d\d)\s+(.*)").unwrap();
             if let Some(caps) = re_time.captures(&value) {
-                dbg!(&caps[1]);
                 let hour = match str::parse::<u8>(&caps[1]) {
                     Ok(hour) => hour,
                     Err(_) => {
@@ -139,6 +138,7 @@ fn title_and_tags(full_title: &str) -> (String, Vec<String>) {
 }
 
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct StatementBuilder {
     statements: Vec<Statement>,
 }
@@ -146,7 +146,7 @@ pub struct StatementBuilder {
 #[allow(dead_code)]
 impl StatementBuilder {
     pub fn new() -> Self {
-        StatementBuilder { statements: vec![] }
+        StatementBuilder::default()
     }
 
     pub fn parse(&mut self, line: String) {

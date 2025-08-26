@@ -1,4 +1,3 @@
-use dagzet::logzet;
 use dagzet::logzet::entity::statements_to_entities;
 use dagzet::logzet::rows::SessionRows;
 use dagzet::logzet::session_tree::entities_to_map;
@@ -29,8 +28,7 @@ fn generate(stmts: Vec<Statement>) -> Vec<SessionRows> {
     sessions.iter().map(|s| (&entities, s).into()).collect()
 }
 
-fn main() {
-    logzet::hello();
+fn rows() -> Vec<SessionRows> {
     let mut stdin = false;
 
     if env::args().len() < 2 {
@@ -39,15 +37,23 @@ fn main() {
 
     if stdin {
         let reader = BufReader::new(io::stdin());
-        let _rows = generate(generate_statements(reader));
-        return;
+        return generate(generate_statements(reader));
     }
 
     let filenames = env::args().skip(1);
 
+    let mut rows: Vec<SessionRows> = vec![];
     for filename in filenames {
         let f = File::open(filename).unwrap();
         let reader = BufReader::new(f);
-        let _rows = generate(generate_statements(reader));
+        rows.append(&mut generate(generate_statements(reader)));
+    }
+    rows
+}
+
+fn main() {
+    let mut f = io::stdout();
+    for row in rows() {
+        row.generate(&mut f)
     }
 }

@@ -5,6 +5,7 @@ pub mod rows;
 mod session;
 pub mod session_tree;
 pub mod statement;
+pub mod tables;
 use entity::{statements_to_entities, EntityId};
 use id::WithId;
 use session::build_session_map;
@@ -72,7 +73,7 @@ enum Block {
 }
 
 #[derive(Default, Clone)]
-struct TextBlock {
+pub struct TextBlock {
     uuid: EntityId,
     lines: Vec<String>,
 }
@@ -87,7 +88,7 @@ impl TextBlock {
 }
 
 #[derive(Clone)]
-enum BlockData {
+pub enum BlockData {
     Text(TextBlock),
 }
 
