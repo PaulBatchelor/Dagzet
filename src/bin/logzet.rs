@@ -56,7 +56,10 @@ fn main() {
     let mut f = io::stdout();
     let schemas = Schemas::default();
     schemas.generate(&mut f);
-    for row in rows() {
+    let rows = rows();
+    for row in &rows {
         row.generate(&schemas, &mut f)
     }
+    // HACK: Only generate connections once
+    rows[0].generate_connections(&schemas, &mut f);
 }

@@ -1226,3 +1226,31 @@ So, this will have to wait.
 blocks from the session aren't showing up.
 ---
 blocks have been added. no problem.
+
+@15:11 now the connections #timelog:00:39:08
+connections are not showing up
+---
+my connection data is garbage. Wrong number of
+connections, plus the node information isn't being saved.
+---
+The connections btree map is being generated properly I think.
+I'm just not generated the rows correctly. I thought
+I was being clever with flattening.
+---
+Connections and entity lookup maps are global to all sessions.
+Lumping them into SessionRows is redundant. Really, there
+should be a struct on top of SessionRows that is the top-level
+thing returned.
+---
+Connections need to be done after all the sessions
+are populated, because there's no decent way to know
+which connections belong to which sessions.
+---
+The ID is hard coded to be 0 for some reason. Am I not
+setting it up right?
+---
+Ah yeah, I haven't implemented it yet.
+---
+Good! now to just run this once.
+---
+It works. It's messy. But, it works.

@@ -46,9 +46,9 @@ pub struct BlockRow {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct EntityConnectionsRow {
-    entity_id: EntityId,
-    node: String,
+pub struct EntityConnectionsRow {
+    pub entity_id: EntityId,
+    pub node: String,
 }
 
 #[allow(dead_code)]
@@ -79,8 +79,10 @@ pub struct SessionRows {
     pub session: SessionRow,
     pub blocks: Vec<BlockRow>,
     pub entities: Vec<EntityRow>,
-    connections: Vec<EntityConnectionsRow>,
+    // TODO: move connections out of session rows
+    pub connections: Vec<EntityConnectionsRow>,
     tags: Vec<TagsRow>,
+    // TODO: move lookup out of session rows
     pub lookup: HashMap<EntityId, String>,
 }
 
@@ -269,9 +271,14 @@ impl From<(&EntityList, &BlockIndex, usize, usize)> for BlockRow {
 }
 
 impl From<(&EntityList, usize, &String)> for EntityConnectionsRow {
-    fn from(_value: (&EntityList, usize, &String)) -> EntityConnectionsRow {
+    fn from(value: (&EntityList, usize, &String)) -> EntityConnectionsRow {
         // TODO: implement
-        EntityConnectionsRow::default()
+        //EntityConnectionsRow::default()
+        let (_entity_list, entity_id, node) = value;
+        EntityConnectionsRow {
+            entity_id,
+            node: node.to_string(),
+        }
     }
 }
 

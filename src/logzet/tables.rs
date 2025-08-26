@@ -1,6 +1,6 @@
 use crate::logzet::rows::{
-    BlockRow as InnerBlockRow, EntryRow as InnerEntryRow, SessionRow as InnerSessionRow,
-    SessionRows,
+    BlockRow as InnerBlockRow, EntityConnectionsRow as InnerEntityConnectionRow,
+    EntryRow as InnerEntryRow, SessionRow as InnerSessionRow, SessionRows,
 };
 use crate::sqlite::{escape_quotes, Param, ParamType, Row, SQLize, Table};
 use std::collections::HashMap;
@@ -164,12 +164,39 @@ impl Default for Table<BlockTable> {
     }
 }
 
+struct EntityConnectionTable;
+
+struct EntityConnectionRow<'a> {
+    inner: &'a InnerEntityConnectionRow,
+    lookup: &'a HashMap<EntityId, String>,
+}
+
+impl Default for Table<EntityConnectionTable> {
+    fn default() -> Self {
+        let mut con: Table<EntityConnectionTable> = Table::new("lz_connections");
+        con.add_column(&Param::new("id", ParamType::Integer));
+        con.add_column(&Param::new("node", ParamType::Text));
+        con
+    }
+}
+
+impl<EntityConnectionTable> Row<EntityConnectionTable> for EntityConnectionRow<'_> {
+    fn sqlize_values(&self) -> String {
+        let inner = &self.inner;
+        let id = uuid_lookup(self.lookup, Some(inner.entity_id));
+        let node = &inner.node;
+
+        format!("{}, '{}'", id, escape_quotes(node),)
+    }
+}
+
 #[derive(Default)]
 pub struct Schemas {
     entities: Table<EntityTable>,
     sessions: Table<SessionTable>,
     entries: Table<EntryTable>,
     blocks: Table<BlockTable>,
+    connections: Table<EntityConnectionTable>,
 }
 
 impl Schemas {
@@ -178,10 +205,23 @@ impl Schemas {
         let _ = f.write_all(&self.sessions.sqlize().into_bytes());
         let _ = f.write_all(&self.entries.sqlize().into_bytes());
         let _ = f.write_all(&self.blocks.sqlize().into_bytes());
+        let _ = f.write_all(&self.connections.sqlize().into_bytes());
     }
 }
 
 impl SessionRows {
+    pub fn generate_connections(&self, schemas: &Schemas, f: &mut impl io::Write) {
+        for row in &self.connections {
+            let s = schemas
+                .connections
+                .sqlize_insert(&EntityConnectionRow {
+                    inner: row,
+                    lookup: &self.lookup,
+                })
+                .to_string();
+            let _ = f.write_all(&s.into_bytes());
+        }
+    }
     pub fn generate(&self, schemas: &Schemas, f: &mut impl io::Write) {
         // Entity List
         for row in &self.entities {
