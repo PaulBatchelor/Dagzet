@@ -1100,3 +1100,5 @@ one by one.
 ---
 I forgot to make titles option in the statement parser.
 I think I can fix that.
+
+@21:30 bugs with statementbuidler nice #timelog:00:09:27

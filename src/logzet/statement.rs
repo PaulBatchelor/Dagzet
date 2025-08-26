@@ -108,7 +108,7 @@ impl TryFrom<String> for Statement {
             return Ok(Statement::Command(Command { args }));
         }
 
-        Err(StatementError::ParseError)
+        Ok(Statement::TextLine(TextLine { text: value }))
     }
 }
 
