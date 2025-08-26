@@ -1082,7 +1082,7 @@ should be very similar to connections
 
 @19:57 set up the initial pipeline right up to SQLite code #timelog:00:18:21
 
-@20:18 code generation for SQLite is the last thing left I think #timelog:05:36
+@20:18 code generation for SQLite is the last thing left I think #timelog:00:05:36
 what's that going to look like?
 ---
 top level, each SessionRows thing is going to have a genenerate trait.
@@ -1254,3 +1254,27 @@ Ah yeah, I haven't implemented it yet.
 Good! now to just run this once.
 ---
 It works. It's messy. But, it works.
+
+@16:45 logtags #timelog:00:20:38
+Gotta have this for the timelogs.
+---
+You know, I think connections can be scoped
+to sessions. An Entities list containing indices
+for the session can be dynamically populated, and
+then those can be used to build a connections
+list. More copying, but it keeps the SessionRows
+more self contained.
+---
+tags are not being found in my test
+---
+I don't think I fully finished up tags. Their
+time has come.
+---
+Ah, I see it. Same issue I had with the lookup table.
+Iterator indices versus entity Ids.
+---
+fixed and good to go.
+---
+Just gonna test with the bigger one.
+---
+Big one works

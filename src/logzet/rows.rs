@@ -53,9 +53,9 @@ pub struct EntityConnectionsRow {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct TagsRow {
-    entity_id: EntityId,
-    tag: String,
+pub struct TagsRow {
+    pub entity_id: EntityId,
+    pub tag: String,
 }
 
 #[allow(dead_code)]
@@ -81,7 +81,7 @@ pub struct SessionRows {
     pub entities: Vec<EntityRow>,
     // TODO: move connections out of session rows
     pub connections: Vec<EntityConnectionsRow>,
-    tags: Vec<TagsRow>,
+    pub tags: Vec<TagsRow>,
     // TODO: move lookup out of session rows
     pub lookup: HashMap<EntityId, String>,
 }
@@ -394,7 +394,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
             .map(|(i, e)| {
                 if let Some(entry) = entity_list.get_entry(e.entry) {
                     for tag in &entry.tags {
-                        tags.push((i, tag.clone()));
+                        tags.push((e.entry.0, tag.clone()));
                     }
                 }
                 e.blocks.iter().for_each(|b| blocks.push((b, i)));

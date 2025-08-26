@@ -1,6 +1,6 @@
 use crate::logzet::rows::{
     BlockRow as InnerBlockRow, EntityConnectionsRow as InnerEntityConnectionRow,
-    EntryRow as InnerEntryRow, SessionRow as InnerSessionRow, SessionRows,
+    EntryRow as InnerEntryRow, SessionRow as InnerSessionRow, SessionRows, TagsRow as InnerTagRow,
 };
 use crate::sqlite::{escape_quotes, Param, ParamType, Row, SQLize, Table};
 use std::collections::HashMap;
@@ -190,6 +190,32 @@ impl<EntityConnectionTable> Row<EntityConnectionTable> for EntityConnectionRow<'
     }
 }
 
+struct TagTable;
+
+struct TagRow<'a> {
+    pub inner: &'a InnerTagRow,
+    pub lookup: &'a HashMap<EntityId, String>,
+}
+
+impl Default for Table<TagTable> {
+    fn default() -> Self {
+        let mut con: Table<TagTable> = Table::new("lz_tags");
+        con.add_column(&Param::new("id", ParamType::Integer));
+        con.add_column(&Param::new("tag", ParamType::Text));
+        con
+    }
+}
+
+impl<TagTable> Row<TagTable> for TagRow<'_> {
+    fn sqlize_values(&self) -> String {
+        let inner = &self.inner;
+        let id = uuid_lookup(self.lookup, Some(inner.entity_id));
+        let tag = &inner.tag;
+
+        format!("{}, '{}'", id, escape_quotes(tag),)
+    }
+}
+
 #[derive(Default)]
 pub struct Schemas {
     entities: Table<EntityTable>,
@@ -197,6 +223,7 @@ pub struct Schemas {
     entries: Table<EntryTable>,
     blocks: Table<BlockTable>,
     connections: Table<EntityConnectionTable>,
+    tags: Table<TagTable>,
 }
 
 impl Schemas {
@@ -206,6 +233,7 @@ impl Schemas {
         let _ = f.write_all(&self.entries.sqlize().into_bytes());
         let _ = f.write_all(&self.blocks.sqlize().into_bytes());
         let _ = f.write_all(&self.connections.sqlize().into_bytes());
+        let _ = f.write_all(&self.tags.sqlize().into_bytes());
     }
 }
 
@@ -254,6 +282,17 @@ impl SessionRows {
             let s = schemas
                 .blocks
                 .sqlize_insert(&BlockRow {
+                    inner: row,
+                    lookup: &self.lookup,
+                })
+                .to_string();
+            let _ = f.write_all(&s.into_bytes());
+        }
+
+        for row in &self.tags {
+            let s = schemas
+                .tags
+                .sqlize_insert(&TagRow {
                     inner: row,
                     lookup: &self.lookup,
                 })
