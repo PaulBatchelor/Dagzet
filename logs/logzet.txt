@@ -1079,3 +1079,5 @@ should be very similar to connections
 @19:31 set up simple file IO in main #timelog:00:11:14
 
 @19:43 statement builder #timelog:00:12:32
+
+@19:57 set up the initial pipeline right up to SQLite code #timelog:00:18:21

@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
-mod entity;
+pub mod entity;
 mod id;
-mod rows;
+pub mod rows;
 mod session;
-mod session_tree;
-mod statement;
+pub mod session_tree;
+pub mod statement;
 use entity::{statements_to_entities, EntityId};
 use id::WithId;
 use session::build_session_map;
@@ -17,7 +17,7 @@ pub fn hello() {
 
 #[allow(dead_code)]
 #[derive(Default, Clone, Debug, PartialEq, Ord, Eq, PartialOrd)]
-struct DateKey {
+pub struct DateKey {
     month: u8,
     day: u8,
     year: u16,
@@ -26,7 +26,7 @@ struct DateKey {
 
 #[allow(dead_code)]
 #[derive(Default, Clone, Debug, PartialEq, Ord, PartialOrd, Eq)]
-struct TimeKey {
+pub struct TimeKey {
     hour: u8,
     minute: u8,
 }
@@ -34,7 +34,7 @@ struct TimeKey {
 /// Simple representation of a date
 #[allow(dead_code)]
 #[derive(Default, Clone)]
-struct Date {
+pub struct Date {
     key: DateKey,
     title: String,
     tags: Vec<String>,
@@ -43,7 +43,7 @@ struct Date {
 /// Simple representation of a time
 #[allow(dead_code)]
 #[derive(Default, Clone)]
-struct Time {
+pub struct Time {
     id: EntityId,
     key: TimeKey,
     title: String,
@@ -53,14 +53,14 @@ struct Time {
 /// A single line of text
 #[allow(dead_code)]
 #[derive(Clone)]
-struct TextLine {
+pub struct TextLine {
     text: String,
 }
 
 /// A command
 #[allow(dead_code)]
 #[derive(Clone)]
-struct Command {
+pub struct Command {
     args: Vec<String>,
 }
 
@@ -183,7 +183,7 @@ impl<T> EntryMap<T> {
     }
 }
 
-type DateMap<T, U> = BTreeMap<DateKey, SessionWrapper<T, U>>;
+pub type DateMap<T, U> = BTreeMap<DateKey, SessionWrapper<T, U>>;
 
 #[allow(dead_code)]
 #[derive(Default)]
@@ -222,7 +222,7 @@ struct SessionInfo {
 
 #[allow(dead_code)]
 #[derive(Default)]
-struct SessionWrapper<T, S> {
+pub struct SessionWrapper<T, S> {
     entries: EntryMap<T>,
     data: S,
 }
