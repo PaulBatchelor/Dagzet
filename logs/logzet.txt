@@ -1288,4 +1288,16 @@ lookup table is only scoped for the current session.
 
 17:41 add BEGIN/COMMIT #timelog:00:01:47
 
-@17:43 remove dead_code annotations
+@17:43 remove dead_code annotations #timelog:00:11:59
+
+@17:57 I think that's a wrap. I've done what I set out to do
+The day is Tuesday. I was hoping to get this done on Sunday.
+But, I got dragged into a pretty big restructuring to get
+dagzet node connections working.
+---
+The full dagzet syntax still needs to be implemented,
+and pre-block syntax needs to be worked out. These don't
+feel as important to me (yet), as I can use the older
+version of my log generator just fine for the legacy stuff.
+---
+Time to do something else.
