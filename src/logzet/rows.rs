@@ -17,6 +17,7 @@ pub struct EntryRow {
     pub day: String,
     pub context: Option<String>,
     pub time: String,
+    // TODO: make title optional
     pub title: String,
     pub nblocks: usize,
     pub top_block: Option<usize>,
@@ -73,7 +74,8 @@ fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow>
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionRows {
-    logs: Vec<EntryRow>,
+    // TODO: rename "logs" to entries
+    pub logs: Vec<EntryRow>,
     pub session: SessionRow,
     blocks: Vec<BlockRow>,
     pub entities: Vec<EntityRow>,

@@ -1,5 +1,5 @@
-use crate::logzet::rows::{SessionRow as InnerSessionRow, SessionRows};
-use crate::sqlite::{Param, ParamType, Row, SQLize, Table};
+use crate::logzet::rows::{EntryRow as InnerEntryRow, SessionRow as InnerSessionRow, SessionRows};
+use crate::sqlite::{escape_quotes, Param, ParamType, Row, SQLize, Table};
 use std::collections::HashMap;
 
 use std::io;
@@ -29,6 +29,19 @@ struct SessionRow<'a> {
     inner: &'a InnerSessionRow,
     lookup: &'a HashMap<EntityId, String>,
 }
+
+fn uuid_lookup(lookup: &HashMap<EntityId, String>, entity_id: Option<EntityId>) -> String {
+    if let Some(entity_id) = entity_id {
+        if let Some(uuid) = lookup.get(&entity_id) {
+            format!("(SELECT rowid FROM lz_entities WHERE id IS '{}')", uuid)
+        } else {
+            "-2".to_string()
+        }
+    } else {
+        "-1".to_string()
+    }
+}
+
 impl<SessionTable> Row<SessionTable> for SessionRow<'_> {
     fn sqlize_values(&self) -> String {
         let inner = &self.inner;
@@ -38,20 +51,16 @@ impl<SessionTable> Row<SessionTable> for SessionRow<'_> {
         let title = inner.title.as_deref().unwrap_or("");
         let context = inner.context.as_deref().unwrap_or("");
         let nblocks = inner.nblocks;
-        let top_block = if let Some(top_block) = inner.top_block {
-            dbg!(&top_block);
-            if let Some(uuid) = self.lookup.get(&top_block) {
-                format!("(SELECT rowid FROM lz_entities WHERE id IS '{}')", uuid)
-            } else {
-                "-2".to_string()
-            }
-        } else {
-            "-1".to_string()
-        };
+        let top_block = uuid_lookup(self.lookup, inner.top_block);
 
         format!(
             "{}, '{}', '{}', '{}', {}, {}",
-            id_lookup, day, title, context, nblocks, top_block
+            id_lookup,
+            day,
+            escape_quotes(title),
+            escape_quotes(context),
+            nblocks,
+            top_block
         )
     }
 }
@@ -69,25 +78,77 @@ impl Default for Table<SessionTable> {
     }
 }
 
+struct EntryTable;
+
+struct EntryRow<'a> {
+    inner: &'a InnerEntryRow,
+    lookup: &'a HashMap<EntityId, String>,
+}
+
+impl<EntryTable> Row<EntryTable> for EntryRow<'_> {
+    fn sqlize_values(&self) -> String {
+        let inner = &self.inner;
+        let id = uuid_lookup(self.lookup, Some(self.inner.entity_id));
+        let day = &inner.day;
+        // TODO: make title optional
+        //let title = inner.title.as_deref().unwrap_or("");
+        let title = &inner.title;
+        let context = inner.context.as_deref().unwrap_or("");
+        let nblocks = inner.nblocks;
+        let top_block = uuid_lookup(self.lookup, inner.top_block);
+        let position = inner.position;
+
+        format!(
+            "{}, '{}', '{}', '{}', {}, {}, {}",
+            id,
+            escape_quotes(day),
+            escape_quotes(title),
+            escape_quotes(context),
+            nblocks,
+            top_block,
+            position
+        )
+    }
+}
+
+impl Default for Table<EntryTable> {
+    fn default() -> Self {
+        let mut con: Table<EntryTable> = Table::new("lz_entries");
+        con.add_column(&Param::new("id", ParamType::Integer));
+        con.add_column(&Param::new("day", ParamType::Text));
+        con.add_column(&Param::new("title", ParamType::Text));
+        con.add_column(&Param::new("context", ParamType::Text));
+        con.add_column(&Param::new("nblocks", ParamType::Integer));
+        con.add_column(&Param::new("top_block", ParamType::Integer));
+        con.add_column(&Param::new("position", ParamType::Integer));
+        con
+    }
+}
+
 #[derive(Default)]
 pub struct Schemas {
     entities: Table<EntityTable>,
     sessions: Table<SessionTable>,
+    entries: Table<EntryTable>,
 }
 
 impl Schemas {
     pub fn generate(&self, f: &mut impl io::Write) {
         let _ = f.write_all(&self.entities.sqlize().into_bytes());
         let _ = f.write_all(&self.sessions.sqlize().into_bytes());
+        let _ = f.write_all(&self.entries.sqlize().into_bytes());
     }
 }
 
 impl SessionRows {
     pub fn generate(&self, schemas: &Schemas, f: &mut impl io::Write) {
+        // Entity List
         for row in &self.entities {
             let s = schemas.entities.sqlize_insert(row).to_string();
             let _ = f.write_all(&s.into_bytes());
         }
+
+        // Session
         let s = schemas
             .sessions
             .sqlize_insert(&SessionRow {
@@ -96,5 +157,16 @@ impl SessionRows {
             })
             .to_string();
         let _ = f.write_all(&s.into_bytes());
+
+        for row in &self.logs {
+            let s = schemas
+                .entries
+                .sqlize_insert(&EntryRow {
+                    inner: row,
+                    lookup: &self.lookup,
+                })
+                .to_string();
+            let _ = f.write_all(&s.into_bytes());
+        }
     }
 }
