@@ -1285,3 +1285,5 @@ each lookup table to just entities in the session.
 ---
 actually, I connections were broken anyways. the symbol
 lookup table is only scoped for the current session.
+
+17:41 add BEGIN/COMMIT #timelog:00:01:47

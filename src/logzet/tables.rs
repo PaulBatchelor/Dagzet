@@ -228,17 +228,20 @@ pub struct Schemas {
 
 impl Schemas {
     pub fn generate(&self, f: &mut impl io::Write) {
+        let _ = f.write_all(b"BEGIN;\n");
         let _ = f.write_all(&self.entities.sqlize().into_bytes());
         let _ = f.write_all(&self.sessions.sqlize().into_bytes());
         let _ = f.write_all(&self.entries.sqlize().into_bytes());
         let _ = f.write_all(&self.blocks.sqlize().into_bytes());
         let _ = f.write_all(&self.connections.sqlize().into_bytes());
         let _ = f.write_all(&self.tags.sqlize().into_bytes());
+        let _ = f.write_all(b"COMMIT;\n");
     }
 }
 
 impl SessionRows {
     pub fn generate(&self, schemas: &Schemas, f: &mut impl io::Write) {
+        let _ = f.write_all(b"BEGIN;\n");
         // Entity List
         for row in &self.entities {
             let s = schemas.entities.sqlize_insert(row).to_string();
@@ -298,5 +301,7 @@ impl SessionRows {
                 .to_string();
             let _ = f.write_all(&s.into_bytes());
         }
+
+        let _ = f.write_all(b"COMMIT;\n");
     }
 }
