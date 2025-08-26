@@ -25,7 +25,7 @@ pub struct EntryRow {
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct SessionRow {
-    pub entity_id: EntityId,
+    pub entity_id: EntityRowId,
     pub day: String,
     pub title: Option<String>,
     pub context: Option<String>,
@@ -73,7 +73,7 @@ fn connections_to_rows(connections: &ConnectionMap) -> Vec<EntityConnectionsRow>
 #[derive(Default)]
 pub struct SessionRows {
     logs: Vec<EntryRow>,
-    session: SessionRow,
+    pub session: SessionRow,
     blocks: Vec<BlockRow>,
     pub entities: Vec<EntityRow>,
     connections: Vec<EntityConnectionsRow>,
@@ -109,10 +109,9 @@ impl From<&TimeKey> for String {
     }
 }
 
-impl From<&EntityRow> for String {
-    fn from(row: &EntityRow) -> String {
+impl From<&EntityRowId> for String {
+    fn from(uuid: &EntityRowId) -> String {
         let mut chunks: Vec<String> = Vec::new();
-        let uuid = &row.uuid;
 
         if let Some(date) = &uuid.date {
             chunks.push(date.into());
@@ -128,6 +127,12 @@ impl From<&EntityRow> for String {
         }
 
         chunks.join("/")
+    }
+}
+
+impl From<&EntityRow> for String {
+    fn from(row: &EntityRow) -> String {
+        (&row.uuid).into()
     }
 }
 
@@ -308,19 +313,26 @@ impl From<(&EntityList, &SessionNode)> for SessionRow {
             None
         };
 
-        let (context, day, title) = if let Some(session) = entity_list.get_session(id) {
+        let (context, day, title, entity_id) = if let Some(session) = entity_list.get_session(id) {
+            // A not-great way to extract the context from the generated timestamp
+            let mut date = session.key.clone();
+            date.context = None;
             (
                 session.key.context.clone(),
-                (&session.key).into(),
+                (&date).into(),
                 Some(session.title.clone()),
+                EntityRowId {
+                    date: Some(session.key.clone()),
+                    ..Default::default()
+                },
             )
         } else {
-            (None, String::new(), None)
+            (None, String::new(), None, EntityRowId::default())
         };
         SessionRow {
             context,
             day,
-            entity_id: id.0,
+            entity_id,
             title,
             nblocks,
             top_block,
