@@ -1,4 +1,4 @@
-use crate::logzet::{Date, DateKey, EntityId, Session, TimeKey};
+use crate::logzet::{DateKey, EntityId, Session, TimeKey};
 
 use super::{
     entity::{BlockIndex, ConnectionMap, EntityList},
@@ -11,10 +11,12 @@ use super::{
 #[derive(Default)]
 pub struct EntryRow {
     pub entity_id: EntityId,
+    // TODO: use session_id instead of day/context
+    // pub session_id: EntityId,
     pub day: String,
+    pub context: Option<String>,
     pub time: String,
     pub title: String,
-    pub category: Option<String>,
     pub nblocks: usize,
     pub top_block: Option<usize>,
     pub position: usize,
@@ -26,8 +28,9 @@ pub struct SessionRow {
     pub entity_id: EntityId,
     pub day: String,
     pub title: Option<String>,
-    pub category: Option<String>,
-    pub blurb: Option<String>,
+    pub context: Option<String>,
+    pub nblocks: usize,
+    pub top_block: Option<usize>,
 }
 
 #[allow(dead_code)]
@@ -137,14 +140,13 @@ pub struct EntityRow {
 impl From<Session> for SessionRows {
     fn from(value: Session) -> SessionRows {
         let date = &value.date.key;
-        let category = None;
+        let context = None;
         let mut entities = Vec::new();
 
         let session = SessionRow {
             day: format!("{:04}-{:02}-{:02}", date.year, date.month, date.day),
             title: Some(value.date.title),
-            category: category.clone(),
-            blurb: None,
+            context: context.clone(),
             ..Default::default()
         };
 
@@ -161,7 +163,7 @@ impl From<Session> for SessionRows {
             .map(|e| EntryRow {
                 day: format!("{:04}-{:02}-{:02}", date.year, date.month, date.day),
                 time: format!("{:02}:{:02}", e.time.key.hour, e.time.key.minute),
-                category: category.clone(),
+                context: context.clone(),
                 title: e.time.title.clone(),
                 //comment: blocks_to_string(e.blocks),
                 ..Default::default()
@@ -205,7 +207,7 @@ impl From<(&EntityList, &SessionNode, &EntryNode, usize)> for EntryRow {
 
         let entity_id = entry_node.entry.0;
 
-        let (day, category) = if let Some(date) = entity_list.get_session(session_node.session) {
+        let (day, context) = if let Some(date) = entity_list.get_session(session_node.session) {
             ((&date.key).into(), date.key.context.clone())
         } else {
             (String::new(), None)
@@ -231,7 +233,7 @@ impl From<(&EntityList, &SessionNode, &EntryNode, usize)> for EntryRow {
             title,
             nblocks,
             top_block,
-            category,
+            context,
             position,
         }
     }
@@ -294,15 +296,34 @@ fn session_to_uuids(entity_list: &EntityList, session_node: &SessionNode) -> Vec
     uuids
 }
 
-impl From<(EntityId, &Date)> for SessionRow {
-    fn from(value: (EntityId, &Date)) -> SessionRow {
-        let (entity_id, session) = value;
+impl From<(&EntityList, &SessionNode)> for SessionRow {
+    fn from(value: (&EntityList, &SessionNode)) -> SessionRow {
+        let (entity_list, session_node) = value;
+        let id = session_node.session;
+        let nblocks = session_node.blocks.len();
+
+        let top_block = if !session_node.blocks.is_empty() {
+            Some(session_node.blocks[0].0)
+        } else {
+            None
+        };
+
+        let (context, day, title) = if let Some(session) = entity_list.get_session(id) {
+            (
+                session.key.context.clone(),
+                (&session.key).into(),
+                Some(session.title.clone()),
+            )
+        } else {
+            (None, String::new(), None)
+        };
         SessionRow {
-            category: session.key.context.clone(),
-            day: (&session.key).into(),
-            blurb: None,
-            entity_id,
-            title: Some(session.title.clone()),
+            context,
+            day,
+            entity_id: id.0,
+            title,
+            nblocks,
+            top_block,
         }
     }
 }
@@ -314,11 +335,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
         let mut blocks: Vec<(&BlockIndex, EntityId)> = Vec::new();
         let mut tags: Vec<(EntityId, String)> = vec![];
 
-        let session = if let Some(session) = entity_list.get_session(session_node.session) {
-            (session_node.session.0, session).into()
-        } else {
-            SessionRow::default()
-        };
+        let session = (entity_list, session_node).into();
 
         let logs = session_node
             .entries
@@ -624,9 +641,9 @@ mod tests {
     struct EntityListData {
         date: Date,
         time: [Time; 2],
-        block: [BlockData; 2],
+        block: [BlockData; 3],
         node: EntryNode,
-        session: SessionNode,
+        session: [SessionNode; 2],
         entity_list: EntityList,
     }
 
@@ -640,6 +657,17 @@ mod tests {
                     day: 25,
                     ..Default::default()
                 },
+                ..Default::default()
+            };
+
+            let date2 = Date {
+                key: DateKey {
+                    year: 2025,
+                    month: 8,
+                    day: 26,
+                    ..Default::default()
+                },
+                title: "The title for the second session".to_string(),
                 ..Default::default()
             };
 
@@ -664,7 +692,18 @@ mod tests {
 
             let block1 = BlockData::Text(TextBlock::default());
             let block2 = BlockData::Text(TextBlock {
-                uuid: 5,
+                uuid: 4,
+                lines: [
+                    "these are some lines.",
+                    "they should be separated by spaces",
+                    "since it is text and not pre-text",
+                ]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+            });
+            let block3 = BlockData::Text(TextBlock {
+                uuid: 6,
                 lines: [
                     "these are some lines.",
                     "they should be separated by spaces",
@@ -675,7 +714,7 @@ mod tests {
                 .collect(),
             });
 
-            let block = [block1, block2];
+            let block = [block1, block2, block3];
 
             let session = SessionNode {
                 session: SessionIndex(0),
@@ -692,11 +731,21 @@ mod tests {
                 ..Default::default()
             };
 
+            let session2 = SessionNode {
+                session: SessionIndex(5),
+                blocks: vec![BlockIndex(6)],
+                ..Default::default()
+            };
+
+            let session = [session, session2];
+
             entity_list.entities.push(Entity::Session(date.clone()));
             entity_list.entities.push(Entity::Entry(time[0].clone()));
             entity_list.entities.push(Entity::Entry(time[1].clone()));
             entity_list.entities.push(Entity::Block(block[0].clone()));
             entity_list.entities.push(Entity::Block(block[1].clone()));
+            entity_list.entities.push(Entity::Session(date2.clone()));
+            entity_list.entities.push(Entity::Block(block[2].clone()));
 
             entity_list.connections.insert(4, vec!["a/c".to_string()]);
             entity_list
@@ -727,7 +776,7 @@ mod tests {
         let date = &data.date;
         let entity_list = &data.entity_list;
         let node = &data.node;
-        let session = &data.session;
+        let session = &data.session[0];
 
         let row: EntryRow = (entity_list, session, node, 2).into();
         assert_eq!(row.entity_id, time2.id, "wrong id");
@@ -761,7 +810,7 @@ mod tests {
     fn test_entity_to_row() {
         let data = EntityListData::new();
         let entity_list = &data.entity_list;
-        let session = &data.session;
+        let session = &data.session[0];
         let uuids = session_to_uuids(entity_list, session);
         let entity_rows: Vec<EntityRow> =
             uuids.into_iter().map(|uuid| EntityRow { uuid }).collect();
@@ -799,5 +848,17 @@ mod tests {
             rows.iter().map(|r| (r.entity_id, r.node.clone())).collect();
 
         assert_eq!(expected_rows, generated_rows);
+    }
+
+    #[test]
+    fn test_session_to_row() {
+        let data = EntityListData::new();
+        let entity_list = &data.entity_list;
+        let session = &data.session[1];
+        let row: SessionRow = (entity_list, session).into();
+
+        assert_eq!(row.nblocks, session.blocks.len());
+        assert!(row.top_block.is_some());
+        assert_eq!(row.top_block.unwrap(), session.blocks[0].0);
     }
 }
