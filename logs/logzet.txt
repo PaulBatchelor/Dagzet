@@ -1081,3 +1081,15 @@ should be very similar to connections
 @19:43 statement builder #timelog:00:12:32
 
 @19:57 set up the initial pipeline right up to SQLite code #timelog:00:18:21
+
+@20:18 code generation for SQLite is the last thing left I think #timelog:05:36
+what's that going to look like?
+---
+top level, each SessionRows thing is going to have a genenerate trait.
+Those will call generate for each of the rows types in the table.
+---
+I think it's about time to have an end-to-end test file that
+builds the actual SQLite file and runs queries.
+---
+We can build this up incrementally I think. The top-level generate
+funciton can slowly populate more and more of the tables.
