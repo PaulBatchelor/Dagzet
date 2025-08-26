@@ -35,6 +35,7 @@ where
         let date_key = date.key.clone();
         self.session_map.insert(id, date);
         self.current_session = Some(date_key);
+        self.current_entry = None;
     }
 
     fn insert_entry(&mut self, id: usize, time: &'a Time) {
@@ -57,19 +58,16 @@ where
             _ => panic!("No active session found"),
         };
 
-        let entry_key = match &self.current_entry {
-            Some(key) => key,
-            // TODO: error handling
-            _ => panic!("No active entry found"),
-        };
-
         let session = match self.session_map.get_session(session_key) {
             Some(data) => data,
             // TODO: error handling
             _ => panic!("session not found"),
         };
 
-        session.insert_block(entry_key, block);
+        match &self.current_entry {
+            Some(key) => session.insert_block_into_entry(key, block),
+            _ => session.insert_block_into_session(block),
+        }
     }
 
     pub fn process(mut self, entities: &'a [Entity]) -> Self {

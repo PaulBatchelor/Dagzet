@@ -23,6 +23,7 @@ impl AppendBlock for EntryNode {
 pub struct SessionNode {
     pub session: SessionIndex,
     pub entries: Vec<EntryNode>,
+    pub blocks: Vec<BlockIndex>,
 }
 
 #[allow(dead_code)]
@@ -50,9 +51,20 @@ impl From<&Time> for EntryNode {
 impl<T> InsertBlock for SessionWrapper<T, SessionNode>
 where
     T: AppendBlock,
+    SessionNode: AppendBlock,
 {
-    fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData) {
+    fn insert_block_into_entry(&mut self, entry_key: &TimeKey, block: &BlockData) {
         self.entries.append_block(entry_key, block);
+    }
+
+    fn insert_block_into_session(&mut self, block: &BlockData) {
+        self.data.append_block(block);
+    }
+}
+
+impl AppendBlock for SessionNode {
+    fn append_block(&mut self, block: &BlockData) {
+        self.blocks.push(BlockIndex(block.id()));
     }
 }
 
@@ -65,25 +77,13 @@ impl<T> From<&Date> for SessionWrapper<T, SessionNode> {
     }
 }
 
-impl From<(DateKey, SessionWrapper<EntryNode, SessionNode>)> for SessionNode
-where
-    EntryNode: From<(TimeKey, EntryNode)>,
-{
+impl From<(DateKey, SessionWrapper<EntryNode, SessionNode>)> for SessionNode {
     fn from(value: (DateKey, SessionWrapper<EntryNode, SessionNode>)) -> SessionNode {
         let (_date, data) = value;
         SessionNode {
             session: data.data.session,
-            entries: data.entries.inner.into_iter().map(|e| e.into()).collect(),
-        }
-    }
-}
-
-impl From<(TimeKey, EntryNode)> for EntryNode {
-    fn from(value: (TimeKey, EntryNode)) -> EntryNode {
-        let (_time, data) = value;
-        EntryNode {
-            entry: data.entry,
-            blocks: data.blocks.into_iter().collect(),
+            entries: data.entries.inner.into_values().collect(),
+            blocks: data.data.blocks,
         }
     }
 }
@@ -94,6 +94,7 @@ mod tests {
     use crate::logzet::statement::Statement;
     use crate::logzet::statements_to_entities;
     use crate::logzet::TextLine;
+
     #[test]
     fn test_session_tree() {
         let dt = Statement::Date;
@@ -180,5 +181,40 @@ mod tests {
         let generated_block_ids: Vec<usize> = blocks.iter().map(|b| b.0).collect();
 
         assert_eq!(expected_block_ids, generated_block_ids);
+    }
+
+    #[test]
+    fn test_append_blocks_to_session() {
+        let dt = Statement::Date;
+        let tl = Statement::TextLine;
+        let br = Statement::Break;
+        let document: Vec<Statement> = vec![
+            dt(Date::default()),
+            tl(TextLine {
+                text: "I am writing some words".to_string(),
+            }),
+            tl(TextLine {
+                text: "and I am doing my task".to_string(),
+            }),
+            br.clone(),
+            // 5
+            tl(TextLine {
+                text: "this is a another thought I had".to_string(),
+            }),
+            br.clone(),
+            // 6
+            tl(TextLine {
+                text: "one more thought".to_string(),
+            }),
+        ];
+
+        let entities = statements_to_entities(document);
+
+        let session_map = entities_to_map(&entities.entities);
+
+        let tree: Vec<SessionNode> = session_map.into_iter().map(|s| s.into()).collect();
+
+        let tree = &tree[0];
+        assert_eq!(tree.blocks.len(), 3);
     }
 }

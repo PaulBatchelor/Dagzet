@@ -242,15 +242,22 @@ where
 }
 
 trait InsertBlock {
-    fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData);
+    fn insert_block_into_entry(&mut self, entry_key: &TimeKey, block: &BlockData);
+    fn insert_block_into_session(&mut self, block: &BlockData);
 }
 
 impl<T> InsertBlock for SessionWrapper<T, SessionInfo>
 where
     T: AppendBlock,
 {
-    fn insert_block(&mut self, entry_key: &TimeKey, block: &BlockData) {
+    fn insert_block_into_entry(&mut self, entry_key: &TimeKey, block: &BlockData) {
         self.entries.append_block(entry_key, block);
+    }
+
+    fn insert_block_into_session(&mut self, _block: &BlockData) {
+        // NOTE: this implementation isn't really used, so I might not actually
+        // need to update this for a while
+        unimplemented!()
     }
 }
 

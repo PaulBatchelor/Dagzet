@@ -689,6 +689,7 @@ mod tests {
                         blocks: [3, 4].into_iter().map(BlockIndex).collect(),
                     },
                 ],
+                ..Default::default()
             };
 
             entity_list.entities.push(Entity::Session(date.clone()));

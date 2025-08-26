@@ -1111,3 +1111,50 @@ We got an entity table!
 Before I make more tables, I'd like to make it so this log actually parses.
 I think the one gotcha I have here are that blocks aren't yet able
 to attach to the start of sessions.
+
+@2025-08-26#logzet Last day of this initial logzet effort
+
+@10:04 hoping to wrap things up today. what is left? #timelog:00:03:11
+I want to be able to finish up generating all the SQLite table data.
+---
+I want to make sure that blocks are set up for SQLite full-text search.
+---
+I want sessions to have blocks associated with them.
+---
+My goal is to be able to parse this log by the end of the data.
+If the data isn't all there, that's fine. But I'd like it to
+be close. I'd like this syntax to be valid. I think that will
+set me up for success later this fall when I will have little
+to no time to update this thing.
+
+@10:08 sessions should definitely have blocks associated with them #timelog:00:53:04
+We can update the session tree for this. the old session data
+structure can wait (maybe remove it even?).
+---
+Our session builder needs to be updated to clear the currently
+selected entry key when a new session is created. Somewhere,
+this will provide the logic needed in order append the
+block to the session instead of the block. Doesn't sound terribly
+difficult, but it might require a fixing a handful of things.
+---
+I think it will be prudent to build a small unit test for this.
+The abstractions should make it easy to spin this up.
+---
+The session tree seems to be a reasonable place to set up this
+test.
+---
+The test no longer panics. I've extended the InsertBlock trait
+to specify inserting into the session or the entry. It doesn't
+do anything yet for the session tree implementation. Now I need
+to build some things out so the test fails again.
+---
+Good, now the tree is failing as expected. Let's see if I can
+append blocks to the tree now.
+---
+The blocks are definitely being appended to, they just aren't
+showing up in the final result.
+---
+Nice! tests pass. Will things parse okay now?
+---
+Oh hell yeah. It all parses now. Table generation, and then it
+should be done.
