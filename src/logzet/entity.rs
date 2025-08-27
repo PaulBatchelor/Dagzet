@@ -57,6 +57,7 @@ pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     let mut entities = vec![];
     let mut curblock: Option<Vec<String>> = None;
     let mut connections: BTreeMap<EntityId, DagzetPathList> = BTreeMap::new();
+    let mut last_node: Option<String> = None;
 
     for stmt in stmts {
         if let Statement::Date(date) = stmt {
@@ -128,10 +129,27 @@ pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
 
             let con = connections.get_mut(&last_entity_id);
 
-            if let Some(con) = con {
-                con.push(args[1].clone());
+            let node = if args[1].starts_with('$') {
+                if let Some(last_node) = &last_node {
+                    if let Some(parts) = args[1].split_once("/") {
+                        let (_, suffix) = parts;
+                        format!("{}/{}", last_node, suffix)
+                    } else {
+                        last_node.clone()
+                    }
+                } else {
+                    // TODO: error handling
+                    panic!("$ not set");
+                }
             } else {
-                connections.insert(last_entity_id, vec![args[1].clone()]);
+                last_node = Some(args[1].clone());
+                args[1].clone()
+            };
+
+            if let Some(con) = con {
+                con.push(node);
+            } else {
+                connections.insert(last_entity_id, vec![node]);
             }
 
             continue;
@@ -147,3 +165,33 @@ pub fn statements_to_entities(stmts: Vec<Statement>) -> EntityList {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::logzet::Command;
+    #[test]
+    fn test_dz_prev_operator() {
+        let stmts: Vec<Statement> = vec![
+            Statement::Date(Date::default()),
+            Statement::Time(Time::default().hour(12).minute(34)),
+            Statement::Command(Command {
+                args: ["dz", "a/b"].into_iter().map(String::from).collect(),
+            }),
+            Statement::Time(Time::default().hour(13).minute(37)),
+            Statement::Command(Command {
+                args: ["dz", "$"].into_iter().map(String::from).collect(),
+            }),
+            Statement::Command(Command {
+                args: ["dz", "$/c"].into_iter().map(String::from).collect(),
+            }),
+        ];
+        let entities = statements_to_entities(stmts);
+        let connections = entities.connections;
+        let generated: Vec<(usize, Vec<String>)> = connections.into_iter().collect();
+        let expected: Vec<(usize, Vec<String>)> = [(1, vec!["a/b"]), (2, vec!["a/b", "a/b/c"])]
+            .into_iter()
+            .map(|(id, nodes)| (id, nodes.into_iter().map(String::from).collect()))
+            .collect();
+        assert_eq!(generated, expected);
+    }
+}

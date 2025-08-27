@@ -46,6 +46,17 @@ pub struct Time {
     tags: Vec<String>,
 }
 
+impl Time {
+    pub fn hour(mut self, hour: u8) -> Time {
+        self.key.hour = hour;
+        self
+    }
+    pub fn minute(mut self, minute: u8) -> Time {
+        self.key.minute = minute;
+        self
+    }
+}
+
 /// A single line of text
 #[derive(Clone)]
 pub struct TextLine {

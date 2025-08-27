@@ -1301,3 +1301,15 @@ feel as important to me (yet), as I can use the older
 version of my log generator just fine for the legacy stuff.
 ---
 Time to do something else.
+
+@21:25 dagzet '$' operator how bad could it be? #timelog:00:36:24
+I should be off this thing, but if I get this I think
+I'll be feature complete with the original logging system
+system.
+---
+Initial unit test set up. Failing as expected.
+---
+Note to my future self: it would have been faster to set up a test
+that parses raw logzet text into statements (via StatementBuilder), but I instead opted
+to handcoded the Statement enums themselves. The test goes
+through less stacks this way.
