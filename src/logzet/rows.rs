@@ -357,6 +357,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
     fn from(value: (&EntityList, &SessionNode)) -> SessionRows {
         let (entity_list, session_node) = value;
 
+        // blocks, pairs consisting of the block index and the parent
         let mut blocks: Vec<(&BlockIndex, EntityId)> = Vec::new();
         let mut tags: Vec<(EntityId, String)> = vec![];
 
@@ -376,7 +377,7 @@ impl From<(&EntityList, &SessionNode)> for SessionRows {
                         tags.push((e.entry.0, tag.clone()));
                     }
                 }
-                e.blocks.iter().for_each(|b| blocks.push((b, i)));
+                e.blocks.iter().for_each(|b| blocks.push((b, e.entry.0)));
                 (entity_list, session_node, e, i).into()
             })
             .collect();

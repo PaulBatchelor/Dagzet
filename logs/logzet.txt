@@ -1313,3 +1313,19 @@ Note to my future self: it would have been faster to set up a test
 that parses raw logzet text into statements (via StatementBuilder), but I instead opted
 to handcoded the Statement enums themselves. The test goes
 through less stacks this way.
+
+@22:34 I have found a bug #timelog:00:17:00
+I tested on logzet on a bunch of logs, and I found a bug
+where the lookup table doesn't seem to be including
+some of the UUIDs, even though they do indeed show
+up in the entity list.
+---
+The entity passed into the block is incorrect. The lookup
+table does indeed have the UUID with the write entity ID.
+---
+It is the parent ID, specifically for blocks.
+---
+It was another indexing issue. I keep wanting to use index
+for entity id, and not the entity id itself. Probably a side effect
+of implementing the entity list, where the index in the list was
+the entity id.
