@@ -822,7 +822,7 @@ impl DagZet {
                 let lefty = adj.get(&left).unwrap();
 
                 if lefty.contains(&right) {
-                    todo!("better error handling for duplicate node");
+                    todo!("Duplicate connections: {left} -> {right}");
                 }
             }
 
